@@ -2,7 +2,7 @@
 <config>
     <modules>
         <Omedrec_Trello>
-            <version>0.1.0</version>
+            <version>0.2.0</version>
         </Omedrec_Trello>
     </modules>
     <global>
@@ -41,12 +41,31 @@
                 <observers>
                     <order_add_trello_card>
                         <class>trello/observer</class>
-                        <method>addOrderCart</method>
+                        <method>addOrderCard</method>
                     </order_add_trello_card>
                 </observers>
             </sales_order_place_after>
+            <sales_order_save_after>
+                <observers>
+                    <order_update_trello_card>
+                        <class>trello/observer</class>
+                        <method>updateOrderCard</method>
+                    </order_update_trello_card>
+                </observers>
+            </sales_order_save_after>
         </events>
     </global>
+    <frontend>
+        <translate>
+            <modules>
+                <Omedrec_Trello>
+                    <files>
+                        <default>Omedrec_Trello.csv</default>
+                    </files>
+                </Omedrec_Trello>
+            </modules>
+        </translate>
+    </frontend>
     <phpunit>
         <suite>
             <modules>
