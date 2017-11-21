@@ -42,6 +42,8 @@
  * @method int getOrderId()
  * @method $this setCardId(string $cardId)
  * @method string getCardId()
+ * @method $this setArchived(bool $archived)
+ * @method bool getArchived()
  */
 class Omedrec_Trello_Model_Order extends Mage_Core_Model_Abstract
 {

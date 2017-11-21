@@ -1,6 +1,35 @@
 <?php
+/**
+ * Emagedev extension for Magento
+ *
+ * NOTICE OF LICENSE
+ *
+ * Copyright (C) Effdocs, LLC - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ *
+ * This source file is proprietary and confidential
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade
+ * the Omedrec Startpage module to newer versions in the future.
+ *
+ * @copyright  Copyright (C) Effdocs, LLC
+ * @license    http://www.binpress.com/license/view/l/45d152a594cd48488fda1a62931432e7
+ */
 
+/**
+ * @category   Omedrec
+ * @package    Omedrec_Trello
+ * @subpackage Model
+ * @author     Dmitry Burlakov <dantaeusb@icloud.com>
+ */
 
+/**
+ * Class Omedrec_Trello_Model_Observer
+ *
+ * API model - map different actions to requests
+ */
 class Omedrec_Trello_Model_Observer
 {
     /**
@@ -37,7 +66,14 @@ class Omedrec_Trello_Model_Observer
         Mage::helper('trello/order')->updateOrderStatusList($order, true);
     }
 
-    public function markOrArchiveOutdatedOrders()
+    /**
+     * Find orders that not changed last 3 days, mark them as
+     * outdated to check their real status
+     * If order was completed 3 or more days ago, archive card
+     *
+     * @param Varien_Event_Observer $observer
+     */
+    public function markOrArchiveOutdatedOrders(Varien_Event_Observer $observer)
     {
         /** @var Mage_Sales_Model_Resource_Order_Collection $orderCollection */
         $orderCollection = Mage::getModel('sales/order')->getCollection();
@@ -51,6 +87,9 @@ class Omedrec_Trello_Model_Observer
 
         $nowDate = new DateTime('now');
 
+        /** @var Omedrec_Trello_Helper_Order $orderHelper */
+        $orderHelper = Mage::helper('trello/order');
+
         /** @var Mage_Sales_Model_Order $order */
         foreach ($orderCollection as $order) {
             $orderDate = new DateTime($order->getUpdatedAt());
@@ -58,7 +97,14 @@ class Omedrec_Trello_Model_Observer
             $days = $orderDate->diff($nowDate)->days;
 
             if ($days > 3) {
-                Mage::helper('trello/order')->markOrderOutdated($order);
+                if ($order->getState() == Mage_Sales_Model_Order::STATE_COMPLETE) {
+                    $orderHelper->archiveOrder($order);
+                } elseif ($order->getState() == Mage_Sales_Model_Order::STATE_HOLDED) {
+                    // Do nothing with orders on hold
+                    continue;
+                } else {
+                    $orderHelper->markOrderOutdated($order);
+                }
             }
         }
     }

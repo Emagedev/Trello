@@ -5,7 +5,6 @@ class Omedrec_Trello_Test_Model_Api extends EcomDev_PHPUnit_Test_Case
 {
     protected $alias = 'trello/api';
 
-    //board 5a0f02b9b88a403a70c53c59
     //card 5a0f0d224e52cc35b024528c
 
     //list 1 5a0f0d1d5deb7a4bd3091d92
@@ -49,8 +48,6 @@ class Omedrec_Trello_Test_Model_Api extends EcomDev_PHPUnit_Test_Case
                 'dueComplete' => 'true'
             )
         );
-
-        var_dump($result);
     }
 
 
@@ -73,7 +70,5 @@ class Omedrec_Trello_Test_Model_Api extends EcomDev_PHPUnit_Test_Case
                 'pos'         => 'bottom',
             )
         );
-
-        var_dump($result);
     }
 }

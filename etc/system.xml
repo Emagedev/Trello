@@ -21,144 +21,55 @@
 -->
 <config>
     <sections>
-        <contacts>
+        <trello_api>
+            <label>Trello API</label>
+            <frontend_type>text</frontend_type>
+            <sort_order>120</sort_order>
+            <show_in_default>1</show_in_default>
+            <tab>service</tab>
             <groups>
-                <info translate="label">
-                    <label>Trello API</label>
+                <general translate="label">
+                    <label>General</label>
                     <frontend_type>text</frontend_type>
                     <sort_order>10</sort_order>
                     <show_in_default>1</show_in_default>
                     <show_in_website>1</show_in_website>
                     <show_in_store>1</show_in_store>
                     <fields>
-                        <show_welcome translate="label comment">
-                            <label>Show Welcome Message</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                        <key translate="label comment">
+                            <label>Trello API key</label>
+                            <frontend_type>text</frontend_type>
                             <sort_order>10</sort_order>
                             <show_in_default>1</show_in_default>
-                            <comment><![CDATA[<p>Show welcome message for new users?</p>]]></comment>
-                        </show_welcome>
-                        <welcome translate="label comment">
-                            <label>Welcome Message</label>
+                            <comment><![CDATA[<p>Grab a key for your user from <a href="https://trello.com/app-key" target="_blank">https://trello.com/app-key</a></p>]]></comment>
+                        </key>
+                        <token translate="label comment">
+                            <label>Trello API token</label>
                             <frontend_type>text</frontend_type>
                             <sort_order>20</sort_order>
                             <show_in_default>1</show_in_default>
-                            <comment><![CDATA[<p>Welcome message for new user on start of the page</p>]]></comment>
-                        </welcome>
-                        <info translate="label comment">
-                            <label>About Service</label>
-                            <frontend_type>text</frontend_type>
-                            <sort_order>30</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <comment><![CDATA[<p>Second line of welcome message - usually for info about website</p>]]></comment>
-                        </info>
-                        <show_phone translate="label comment">
-                            <label>Show Mobile Phone</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <sort_order>40</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <comment><![CDATA[<p>Show mobile phone in welcome message?</p>]]></comment>
-                        </show_phone>
+                            <comment><![CDATA[<p>Token to auhorize API user on behalf of which actions will be performed</p>]]></comment>
+                        </token>
                     </fields>
-                </info>
-                <call_request translate="label">
-                    <label>Call Requests</label>
+                </general>
+                <order_status translate="label">
+                    <label>Order Status</label>
                     <frontend_type>text</frontend_type>
-                    <sort_order>50</sort_order>
+                    <sort_order>20</sort_order>
                     <show_in_default>1</show_in_default>
                     <show_in_website>1</show_in_website>
                     <show_in_store>1</show_in_store>
                     <fields>
-                        <title translate="label">
-                            <label>Call Request Window Title</label>
+                        <board_id translate="label comment">
+                            <label>Board ID</label>
                             <frontend_type>text</frontend_type>
                             <sort_order>10</sort_order>
                             <show_in_default>1</show_in_default>
-                        </title>
-                        <info translate="label">
-                            <label>Call Request Window Info</label>
-                            <frontend_type>text</frontend_type>
-                            <sort_order>20</sort_order>
-                            <show_in_default>1</show_in_default>
-                        </info>
-                        <window_show_logo translate="label">
-                            <label>Show Window Logo</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <sort_order>25</sort_order>
-                            <show_in_default>1</show_in_default>
-                        </window_show_logo>
-                        <disclaimer translate="label">
-                            <label>Call Request Window Disclaimer</label>
-                            <frontend_type>textarea</frontend_type>
-                            <sort_order>30</sort_order>
-                            <show_in_default>1</show_in_default>
-                        </disclaimer>
-                        <call_request_enable_slack translate="label">
-                            <label>Enable Slack notification</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <sort_order>34</sort_order>
-                            <show_in_default>1</show_in_default>
-                        </call_request_enable_slack>
-                        <call_request_enable_chatra translate="label">
-                            <label>Enable Chatra notification</label>
-                            <frontend_type>select</frontend_type>
-                            <source_model>adminhtml/system_config_source_yesno</source_model>
-                            <sort_order>36</sort_order>
-                            <show_in_default>1</show_in_default>
-                        </call_request_enable_chatra>
-                        <call_request_message_window translate="label comment">
-                            <label>After Request Message In Window</label>
-                            <frontend_type>textarea</frontend_type>
-                            <sort_order>38</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <comment>Appears in window after successful request</comment>
-                        </call_request_message_window>
-                        <call_request_message_pre translate="label comment">
-                            <label>After Request Message Start</label>
-                            <frontend_type>textarea</frontend_type>
-                            <sort_order>40</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <comment>Part of message sent to user before call request info</comment>
-                        </call_request_message_pre>
-                        <call_request_message_post translate="label comment">
-                            <label>After Request Message End</label>
-                            <frontend_type>textarea</frontend_type>
-                            <sort_order>50</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <comment>Part of message sent to user after call request info</comment>
-                        </call_request_message_post>
-                        <slack_webhook translate="label">
-                            <label>Slack Webhook Url</label>
-                            <frontend_type>text</frontend_type>
-                            <sort_order>70</sort_order>
-                            <show_in_default>1</show_in_default>
-                        </slack_webhook>
-                        <chatra_public_key translate="label">
-                            <label>Chatra Public Key</label>
-                            <frontend_type>text</frontend_type>
-                            <sort_order>80</sort_order>
-                            <show_in_default>1</show_in_default>
-                        </chatra_public_key>
-                        <chatra_secret_key translate="label">
-                            <label>Chatra Private Key</label>
-                            <frontend_type>text</frontend_type>
-                            <sort_order>90</sort_order>
-                            <show_in_default>1</show_in_default>
-                        </chatra_secret_key>
-                        <chatra_messages_author_id translate="label comment">
-                            <label>Chatra Author Id</label>
-                            <frontend_type>text</frontend_type>
-                            <sort_order>100</sort_order>
-                            <show_in_default>1</show_in_default>
-                            <comment>On behalf of this user replies will be sent to customer</comment>
-                        </chatra_messages_author_id>
+                            <comment><![CDATA[<p>Board ID, you can find it in Menu - More - Print and Export - JSON - id</p>]]></comment>
+                        </board_id>
                     </fields>
-                </call_request>
+                </order_status>
             </groups>
-        </contacts>
+        </trello_api>
     </sections>
 </config>

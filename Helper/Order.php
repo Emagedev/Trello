@@ -1,6 +1,35 @@
 <?php
+/**
+ * Emagedev extension for Magento
+ *
+ * NOTICE OF LICENSE
+ *
+ * Copyright (C) Effdocs, LLC - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ *
+ * This source file is proprietary and confidential
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade
+ * the Omedrec Startpage module to newer versions in the future.
+ *
+ * @copyright  Copyright (C) Effdocs, LLC
+ * @license    http://www.binpress.com/license/view/l/45d152a594cd48488fda1a62931432e7
+ */
 
+/**
+ * @category   Omedrec
+ * @package    Omedrec_Trello
+ * @subpackage Helper
+ * @author     Dmitry Burlakov <dantaeusb@icloud.com>
+ */
 
+/**
+ * Class Omedrec_Trello_Helper_Order
+ *
+ * Control order cards
+ */
 class Omedrec_Trello_Helper_Order extends Mage_Core_Helper_Abstract
 {
     /**
@@ -75,6 +104,22 @@ class Omedrec_Trello_Helper_Order extends Mage_Core_Helper_Abstract
         return new Varien_Object($trelloCard);
     }
 
+    public function archiveOrder(Mage_Sales_Model_Order $order)
+    {
+        $card = $this->getOrderCard($order);
+
+        $trelloCard = $this->getApi()
+            ->archiveCard(
+                $card->getCardId()
+            );
+
+        $card
+            ->setArchived(true)
+            ->save();
+
+        return new Varien_Object($trelloCard);
+    }
+
     public function updateOrderStatusList($order, $create = false)
     {
         $orderCard = $this->getOrderCard($order, $create);
@@ -100,6 +145,11 @@ class Omedrec_Trello_Helper_Order extends Mage_Core_Helper_Abstract
         return new Varien_Object($trelloCard);
     }
 
+    /**
+     * @param $status
+     *
+     * @return Omedrec_Trello_Model_List
+     */
     public function createStatusList($status)
     {
         if (!($status instanceof Mage_Sales_Model_Order_Status)) {
@@ -110,7 +160,7 @@ class Omedrec_Trello_Helper_Order extends Mage_Core_Helper_Abstract
         $trelloList = $this->getApi()->createList(
             array(
                 'name'    => $status->getStoreLabel(Mage::app()->getStore()),
-                'idBoard' => '5a0f02b9b88a403a70c53c59' // @todo: from config!
+                'idBoard' => $this->getDataHelper()->getBoardId()
             )
         );
 
@@ -123,6 +173,8 @@ class Omedrec_Trello_Helper_Order extends Mage_Core_Helper_Abstract
             ->setStatus($status->getStatus())
             ->setListId($trelloList->getId())
             ->save();
+
+        $this->getDataHelper()->dropListCache();
 
         return $statusListLink;
     }

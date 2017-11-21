@@ -1,6 +1,36 @@
 <?php
+/**
+ * Emagedev extension for Magento
+ *
+ * NOTICE OF LICENSE
+ *
+ * Copyright (C) Effdocs, LLC - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ *
+ * This source file is proprietary and confidential
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade
+ * the Omedrec Startpage module to newer versions in the future.
+ *
+ * @copyright  Copyright (C) Effdocs, LLC
+ * @license    http://www.binpress.com/license/view/l/45d152a594cd48488fda1a62931432e7
+ */
 
+/**
+ *
+ * @category   Omedrec
+ * @package    Omedrec_Trello
+ * @subpackage Model
+ * @author     Dmitry Burlakov <dantaeusb@icloud.com>
+ */
 
+/**
+ * Class Omedrec_Trello_Model_Api_Adapter
+ *
+ * API adapter - run and dispatch queries with params
+ */
 class Omedrec_Trello_Model_Api_Adapter
 {
     const API_BASE_URI = 'https://api.trello.com/1';
@@ -13,6 +43,11 @@ class Omedrec_Trello_Model_Api_Adapter
      */
     protected $apiKey = 'a86595aa6acb6b29e0496836f54b53bf';
 
+    /**
+     * Trello API token (paired with key for auth)
+     *
+     * @var string
+     */
     protected $apiToken = '2a700a2c2b6095e728b9abe9af01d2604cb4f72068d98a27483ce0dc51ecdc7e';
 
     /**
@@ -43,6 +78,28 @@ class Omedrec_Trello_Model_Api_Adapter
      */
     protected $sent = false;
 
+    /**
+     * Set up key-token pair
+     *
+     * Omedrec_Trello_Model_Api_Adapter constructor.
+     */
+    public function __construct()
+    {
+        $this->apiKey = Mage::getStoreConfig('trello_api/general/key');
+        $this->apiToken = Mage::getStoreConfig('trello_api/general/token');
+    }
+
+    /**
+     * Run a query to process some action
+     *
+     * @param array  $actions [action => value] to action/:value
+     * @param string $method HTTP method
+     * @param array  $params Query params
+     * @param array  $headers HTTP headers
+     * @param string $body Query body
+     *
+     * @return array
+     */
     public function run($actions, $method = Zend_Http_Client::GET, $params = array(), $headers = array(), $body = '')
     {
         $params['key'] = $this->apiKey;
@@ -94,6 +151,14 @@ class Omedrec_Trello_Model_Api_Adapter
         );
     }
 
+    /**
+     * Dispatch actions and params to ...action/:value?param1=a&param2=b
+     *
+     * @param $actions [action => value]
+     * @param $params
+     *
+     * @return string
+     */
     public function combineUrl($actions, $params)
     {
         $nestedAction = array();
