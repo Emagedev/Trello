@@ -27,7 +27,7 @@ $installer->getConnection()->addIndex(
     array(
         'status',
     ),
-    array('type' => Varien_Db_Adapter_Interface::INDEX_TYPE_UNIQUE)
+    Varien_Db_Adapter_Interface::INDEX_TYPE_UNIQUE
 );
 
 $installer->getConnection()->addIndex(
@@ -42,7 +42,7 @@ $installer->getConnection()->addIndex(
     array(
         'order_id',
     ),
-    array('type' => Varien_Db_Adapter_Interface::INDEX_TYPE_INDEX)
+    Varien_Db_Adapter_Interface::INDEX_TYPE_INDEX
 );
 
 $installer->endSetup();

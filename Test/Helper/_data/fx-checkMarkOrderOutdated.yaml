@@ -1,0 +1,17 @@
+tables:
+  sales_flat_order:
+    - entity_id: 1
+      increment_id: '100001000'
+      state: 'new'
+      status: 'pending'
+      created_at: '2017-11-11 00:00:00'
+      updated_at: '2017-11-11 00:00:00'
+  trello_order:
+    - link_id: 1
+      order_id: 1
+      card_id: 'ddddffffddddccccbbbbaaaa'
+      archived: 0
+  trello_list:
+    - link_id: 1
+      status: 'pending'
+      list_id: 'ddddffffddddccccbbbbaaaa'

@@ -89,6 +89,11 @@ class Omedrec_Trello_Helper_Data extends Mage_Core_Helper_Data
         return $this->statusLists;
     }
 
+    /**
+     * Drop cached status lists
+     *
+     * @return $this
+     */
     public function dropListCache()
     {
         $this->statusLists = null;

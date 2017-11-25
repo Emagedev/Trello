@@ -33,6 +33,8 @@
 class Omedrec_Trello_Helper_Order extends Mage_Core_Helper_Abstract
 {
     /**
+     * Get trello card connected to order
+     *
      * @param Mage_Sales_Model_Order $order
      * @param bool                   $create
      *
@@ -54,6 +56,14 @@ class Omedrec_Trello_Helper_Order extends Mage_Core_Helper_Abstract
         return $orderCardLink;
     }
 
+    /**
+     * Create new Trello card and fill it with order info,
+     * connect this card and order
+     *
+     * @param Mage_Sales_Model_Order $order
+     *
+     * @return Omedrec_Trello_Model_Order
+     */
     public function createOrderCard(Mage_Sales_Model_Order $order)
     {
         $statusList = $this->getDataHelper()->getStatusListId($order->getStatus());
@@ -91,9 +101,21 @@ class Omedrec_Trello_Helper_Order extends Mage_Core_Helper_Abstract
         return $orderCardLink;
     }
 
+    /**
+     * Update order card and set new params
+     *
+     * @param Mage_Sales_Model_Order $order
+     * @param array                  $params
+     *
+     * @return Varien_Object
+     */
     public function updateOrderCard(Mage_Sales_Model_Order $order, $params)
     {
         $card = $this->getOrderCard($order);
+
+        if (!$card) {
+            return false;
+        }
 
         $trelloCard = $this->getApi()
             ->updateCard(
@@ -104,6 +126,13 @@ class Omedrec_Trello_Helper_Order extends Mage_Core_Helper_Abstract
         return new Varien_Object($trelloCard);
     }
 
+    /**
+     * Mark order card as archived (update with archived param)
+     *
+     * @param Mage_Sales_Model_Order $order
+     *
+     * @return Varien_Object
+     */
     public function archiveOrder(Mage_Sales_Model_Order $order)
     {
         $card = $this->getOrderCard($order);
@@ -114,12 +143,20 @@ class Omedrec_Trello_Helper_Order extends Mage_Core_Helper_Abstract
             );
 
         $card
-            ->setArchived(true)
+            ->setArchived('1')
             ->save();
 
         return new Varien_Object($trelloCard);
     }
 
+    /**
+     * Get order card and put it in some list
+     *
+     * @param Mage_Sales_Model_Order $order
+     * @param bool                   $create
+     *
+     * @return bool|Varien_Object
+     */
     public function updateOrderStatusList($order, $create = false)
     {
         $orderCard = $this->getOrderCard($order, $create);
@@ -128,7 +165,6 @@ class Omedrec_Trello_Helper_Order extends Mage_Core_Helper_Abstract
             return false;
         }
 
-        // @todo: no duplicates, maybe throw error
         $statusList = $this->getDataHelper()->getStatusListId($order->getStatus());
 
         if (!$statusList) {
@@ -146,6 +182,8 @@ class Omedrec_Trello_Helper_Order extends Mage_Core_Helper_Abstract
     }
 
     /**
+     * Create Trello list for status
+     *
      * @param $status
      *
      * @return Omedrec_Trello_Model_List
@@ -179,12 +217,27 @@ class Omedrec_Trello_Helper_Order extends Mage_Core_Helper_Abstract
         return $statusListLink;
     }
 
+    /**
+     * Set uncompeded due date on order card in Trello
+     * so it marks with red-labeled due tag
+     *
+     * @param Mage_Sales_Model_Order $order
+     *
+     * @return Varien_Object
+     */
     public function markOrderOutdated($order)
     {
         return $this->updateOrderCard($order, array('dueComplete' => false));
     }
 
-    protected function getOrderCardDescription(Mage_Sales_Model_Order $order)
+    /**
+     * Create description for order card
+     *
+     * @param Mage_Sales_Model_Order $order
+     *
+     * @return string
+     */
+    public function getOrderCardDescription(Mage_Sales_Model_Order $order)
     {
         $name = $order->getCustomerFirstname() . ' ' . $order->getCustomerLastname();
 
@@ -192,6 +245,8 @@ class Omedrec_Trello_Helper_Order extends Mage_Core_Helper_Abstract
     }
 
     /**
+     * Get general helper
+     *
      * @return Omedrec_Trello_Helper_Data
      */
     protected function getDataHelper()
@@ -200,10 +255,12 @@ class Omedrec_Trello_Helper_Order extends Mage_Core_Helper_Abstract
     }
 
     /**
+     * Get API model
+     *
      * @return Omedrec_Trello_Model_Api
      */
     protected function getApi()
     {
-        return Mage::getModel('trello/api');
+        return Mage::getSingleton('trello/api');
     }
 }

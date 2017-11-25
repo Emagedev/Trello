@@ -49,6 +49,11 @@ class Omedrec_Trello_Model_Api
         );
 
     /**
+     * @var Omedrec_Trello_Model_Api_Adapter
+     */
+    protected $adapter;
+
+    /**
      * Create trello card
      *
      * @param array $params
@@ -57,6 +62,8 @@ class Omedrec_Trello_Model_Api
      */
     public function createCard($params)
     {
+        $this->checkParams($params);
+
         $cardResponse = $this->getAdapter()
             ->run(
                 array('cards'),
@@ -79,7 +86,7 @@ class Omedrec_Trello_Model_Api
         $cardResponse = $this->getAdapter()
             ->run(
                 array('cards' => $cardId),
-                Zend_Http_Client::POST
+                Zend_Http_Client::GET
             );
 
         return $this->decodeResponse($cardResponse);
@@ -95,6 +102,8 @@ class Omedrec_Trello_Model_Api
      */
     public function updateCard($cardId, $params)
     {
+        $this->checkParams($params);
+
         $cardResponse = $this->getAdapter()
             ->run(
                 array('cards' => $cardId),
@@ -158,7 +167,8 @@ class Omedrec_Trello_Model_Api
     /**
      * Update Trello list with provided data
      *
-     * @param array $params
+     * @param string $listId
+     * @param array  $params
      *
      * @return array|string
      */
@@ -188,13 +198,35 @@ class Omedrec_Trello_Model_Api
     }
 
     /**
+     * Check is sent params available in API
+     *
+     * @param array $params
+     *
+     * @return $this
+     */
+    public function checkParams($params)
+    {
+        $diff = array_diff(array_keys($params), $this->cardParams);
+
+        if (!empty($diff)) {
+            Mage::throwException('Params: ' . implode(' ', $diff) . ' not available for cards');
+        }
+
+        return $this;
+    }
+
+    /**
      * Get API adapter model
      *
      * @return Omedrec_Trello_Model_Api_Adapter
      */
     public function getAdapter()
     {
-        return Mage::getModel('trello/api_adapter');
+        if (is_null($this->adapter)) {
+            $this->adapter = Mage::getModel('trello/api_adapter');
+        }
+
+        return $this->adapter;
     }
 
     /**
@@ -207,7 +239,11 @@ class Omedrec_Trello_Model_Api
      */
     protected function decodeResponse($response)
     {
-        if ($response['code'] != 200) {
+        if (!is_array($response) || !array_key_exists('code', $response) || $response['code'] != 200) {
+            if (!is_array($response) || !array_key_exists('body', $response) || $response['body'] == '') {
+                Mage::throwException('No answer from API');
+            }
+
             Mage::throwException($response['body']);
         }
 

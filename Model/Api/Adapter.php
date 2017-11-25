@@ -41,14 +41,14 @@ class Omedrec_Trello_Model_Api_Adapter
      *
      * @var string
      */
-    protected $apiKey = 'a86595aa6acb6b29e0496836f54b53bf';
+    protected $apiKey;
 
     /**
      * Trello API token (paired with key for auth)
      *
      * @var string
      */
-    protected $apiToken = '2a700a2c2b6095e728b9abe9af01d2604cb4f72068d98a27483ce0dc51ecdc7e';
+    protected $apiToken;
 
     /**
      * Occurred errors
@@ -195,8 +195,8 @@ class Omedrec_Trello_Model_Api_Adapter
             $adapter
                 ->addOptions(
                     array(
-                        CURLOPT_CONNECTTIMEOUT => 15,
-                        CURLOPT_TIMEOUT        => 30
+                        CURLOPT_CONNECTTIMEOUT => 10,
+                        CURLOPT_TIMEOUT        => 15
                     )
                 );
 

@@ -5,70 +5,119 @@ class Omedrec_Trello_Test_Model_Api extends EcomDev_PHPUnit_Test_Case
 {
     protected $alias = 'trello/api';
 
-    //card 5a0f0d224e52cc35b024528c
-
-    //list 1 5a0f0d1d5deb7a4bd3091d92
-    //list 2 5a0f0d1fdca57ca4185c5066
-
     /**
      * @test
      */
-    public function checkCardUpdate()
+    public function massApiCheck()
     {
-        /** @var Omedrec_Trello_Model_Api $api */
-        $api = Mage::getModel($this->alias);
-
-        $result = $api->updateCard(
-            '5a0f0d224e52cc35b024528c', array(
-                'idList' => '5a0f0d1fdca57ca4185c5066'
+        $actions = array(
+            'create_card'  => array(
+                array('cards'),
+                Zend_Http_Client::POST,
+                array('name' => 'Test')
+            ),
+            'get_card'     => array(
+                array('cards' => ':id'),
+                Zend_Http_Client::GET
+            ),
+            'update_card'  => array(
+                array('cards' => ':id'),
+                Zend_Http_Client::PUT,
+                array('name' => 'Test')
+            ),
+            'archive_card' => array(
+                array('cards' => ':id'),
+                Zend_Http_Client::PUT
+            ),
+            'delete_card'  => array(
+                array('cards' => ':id'),
+                Zend_Http_Client::DELETE
+            ),
+            'create_list'  => array(
+                array('lists'),
+                Zend_Http_Client::POST,
+                array('name' => 'Test', 'idBoard' => 'test')
+            ),
+            'update_list'  => array(
+                array('lists' => ':id'),
+                Zend_Http_Client::PUT,
+                array('name' => 'Test')
+            ),
+            'archive_list' => array(
+                array('lists' => ':id'),
+                Zend_Http_Client::PUT
             )
         );
 
-        var_dump($result);
+        $params = array(
+            'create_card'  => array(
+                array('name' => 'Test')
+            ),
+            'get_card'     => array(
+                ':id'
+            ),
+            'update_card'  => array(
+                ':id',
+                array('name' => 'Test')
+            ),
+            'archive_card' => array(
+                ':id',
+                array('closed' => true)
+            ),
+            'delete_card'  => array(
+                ':id'
+            ),
+            'create_list'  => array(
+                array(
+                    'name'    => 'Test',
+                    'idBoard' => 'test'
+                )
+            ),
+            'update_list'  => array(
+                ':id',
+                array('name' => 'Test')
+            ),
+            'archive_list' => array(
+                ':id',
+                array('closed' => true)
+            )
+        );
+
+        $adapterMock = $this->mockModel('trello/api_adapter', array('run'));
+        $adapterMock->replaceByMock('model');
+
+        $adapterMockMethod = $adapterMock
+            ->expects($this->any())
+            ->method('run');
+
+        call_user_func_array(array($adapterMockMethod, 'withConsecutive'), array_values($actions));
+
+        $adapterMockMethod
+            ->willReturn(
+                array(
+                    'code'   => 200,
+                    'header' => 'Header',
+                    'body'   => '{"status": "ok"}'
+                )
+            );
+
+        $api = Mage::getModel($this->alias);
+
+        foreach ($actions as $method => $callParams) {
+            $methodCamelCase = $this->toCamelCase($method);
+
+            call_user_func_array(array($api, $methodCamelCase), $params[$method]);
+        }
     }
 
-    /**
-     * @test
-     */
-    public function checkCardCreate()
+    protected function toCamelCase($string, $capitalizeFirstCharacter = false)
     {
-        /** @var Omedrec_Trello_Model_Api $api */
-        $api = Mage::getModel($this->alias);
+        $str = str_replace('_', '', ucwords($string, '_'));
 
-        $timestamp = time();
-        $dateTime = new DateTime('now', new DateTimeZone('UTC'));
-        $dateTime->setTimestamp($timestamp);
+        if (!$capitalizeFirstCharacter) {
+            $str = lcfirst($str);
+        }
 
-        $result = $api->createCard(
-            array(
-                'idList'      => '5a0f0d1fdca57ca4185c5066',
-                'name'        => 'Order #1524',
-                'desc'        => 'Created by Somebody, vendor: SomeVendor',
-                'due'         => $dateTime->format(DateTime::W3C),
-                'dueComplete' => 'true'
-            )
-        );
-    }
-
-
-    /**
-     * @test
-     */
-    public function checkListCreate()
-    {
-        /** @var Omedrec_Trello_Model_Api $api */
-        $api = Mage::getModel($this->alias);
-
-        $timestamp = time();
-        $dateTime = new DateTime('now', new DateTimeZone('UTC'));
-        $dateTime->setTimestamp($timestamp);
-
-        $result = $api->createList(
-            array(
-                'idBoard'     => '5a0f02b9b88a403a70c53c59',
-                'name'        => 'In Progress',
-                'pos'         => 'bottom',
-            )
-        );
+        return $str;
     }
 }
