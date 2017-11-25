@@ -78,12 +78,9 @@ class Omedrec_Trello_Model_Observer
         /** @var Mage_Sales_Model_Resource_Order_Collection $orderCollection */
         $orderCollection = Mage::getModel('sales/order')->getCollection();
 
-        $orderCollection
-            ->getSelect()
-            ->joinInner(
-                array('order_card' => Mage::getSingleton('core/resource')->getTableName('trello/order')),
-                'order_card.order_id = main_table.entity_id'
-            );
+        /** @var Omedrec_Trello_Model_Resource_Order $cardResource */
+        $cardResource = Mage::getModel('trello/order')->getResource();
+        $cardResource->filterOrdersWithActiveCards($orderCollection);
 
         $nowDate = new DateTime('now');
 

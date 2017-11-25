@@ -45,4 +45,23 @@ class Omedrec_Trello_Model_Resource_Order extends Mage_Core_Model_Mysql4_Abstrac
     {
         $this->_init('trello/order', 'link_id');
     }
+
+    /**
+     * Join order cards an filter not archived
+     *
+     * @param Mage_Sales_Model_Resource_Order_Collection $orderCollection
+     *
+     * @return $this
+     */
+    public function filterOrdersWithActiveCards($orderCollection)
+    {
+        $orderCollection
+            ->getSelect()
+            ->joinInner(
+                array('order_card' => Mage::getSingleton('core/resource')->getTableName('trello/order')),
+                'order_card.order_id = main_table.entity_id AND archived = 0'
+            );
+
+        return $this;
+    }
 }

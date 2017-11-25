@@ -1,0 +1,39 @@
+tables:
+  sales_flat_order:
+    - entity_id: 1
+      increment_id: '100001001'
+      state: 'new'
+      status: 'pending'
+      created_at: '2017-11-11 00:00:00'
+      updated_at: '2017-11-11 00:00:00'
+    - entity_id: 2
+      increment_id: '100001002'
+      state: 'complete'
+      status: 'complete'
+      created_at: '2017-11-11 00:00:00'
+      updated_at: '2017-11-11 00:00:00'
+    - entity_id: 3
+      increment_id: '100001003'
+      state: 'holded'
+      status: 'holded'
+      created_at: '2017-11-11 00:00:00'
+      updated_at: '2017-11-11 00:00:00'
+    - entity_id: 4
+      increment_id: '100001004'
+      state: 'complete'
+      status: 'complete'
+      created_at: '2017-11-11 00:00:00'
+      updated_at: '2017-11-11 00:00:00'
+  trello_order:
+    - link_id: 1
+      order_id: 1
+      card_id: "ddddffffddddccccbbbbaaaa"
+      archived: 0
+    - link_id: 2
+      order_id: 2
+      card_id: "ddddffffddddccccbbbbaaaa"
+      archived: 0
+    - link_id: 3
+      order_id: 4
+      card_id: "ddddffffddddccccbbbbaaaa"
+      archived: 1

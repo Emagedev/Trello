@@ -21,14 +21,12 @@
 /**
  * @category   Omedrec
  * @package    Omedrec_Trello
- * @subpackage Model
+ * @subpackage Test
  * @author     Dmitry Burlakov <dantaeusb@icloud.com>
  */
 
 /**
  * Class Omedrec_Trello_Test_Helper_Order
- *
- *
  */
 class Omedrec_Trello_Test_Helper_Order extends EcomDev_PHPUnit_Test_Case
 {
