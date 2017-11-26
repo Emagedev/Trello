@@ -75,6 +75,18 @@
             </sales_order_save_after>
         </events>
     </global>
+    <crontab>
+        <jobs>
+            <mark_order_cards_outdated_or_archive>
+                <schedule>
+                    <cron_expr>30 2 * * *</cron_expr>
+                </schedule>
+                <run>
+                    <model>trello/observer::markOrArchiveOutdatedOrders</model>
+                </run>
+            </mark_order_cards_outdated_or_archive>
+        </jobs>
+    </crontab>
     <frontend>
         <translate>
             <modules>

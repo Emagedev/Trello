@@ -98,7 +98,7 @@ class Omedrec_Trello_Model_Api_Adapter
      * @param array  $headers HTTP headers
      * @param string $body Query body
      *
-     * @return array
+     * @return bool|array
      */
     public function run($actions, $method = Zend_Http_Client::GET, $params = array(), $headers = array(), $body = '')
     {
@@ -152,6 +152,20 @@ class Omedrec_Trello_Model_Api_Adapter
     }
 
     /**
+     * Set flags if request failed
+     *
+     * @param $message
+     *
+     * @return bool
+     */
+    protected function dispatchFailure($message)
+    {
+        $this->successful = false;
+        $this->errors[] = $message;
+        return false;
+    }
+
+    /**
      * Dispatch actions and params to ...action/:value?param1=a&param2=b
      *
      * @param $actions [action => value]
@@ -195,8 +209,8 @@ class Omedrec_Trello_Model_Api_Adapter
             $adapter
                 ->addOptions(
                     array(
-                        CURLOPT_CONNECTTIMEOUT => 10,
-                        CURLOPT_TIMEOUT        => 15
+                        CURLOPT_CONNECTTIMEOUT => 1,
+                        CURLOPT_TIMEOUT        => 2
                     )
                 );
 

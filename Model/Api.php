@@ -220,7 +220,7 @@ class Omedrec_Trello_Model_Api
      *
      * @return Omedrec_Trello_Model_Api_Adapter
      */
-    public function getAdapter()
+    protected function getAdapter()
     {
         if (is_null($this->adapter)) {
             $this->adapter = Mage::getModel('trello/api_adapter');
@@ -239,14 +239,18 @@ class Omedrec_Trello_Model_Api
      */
     protected function decodeResponse($response)
     {
-        if (!is_array($response) || !array_key_exists('code', $response) || $response['code'] != 200) {
-            if (!is_array($response) || !array_key_exists('body', $response) || $response['body'] == '') {
-                Mage::throwException('No answer from API');
+        try {
+            if (!is_array($response) || !array_key_exists('code', $response) || $response['code'] != 200) {
+                if (!is_array($response) || !array_key_exists('body', $response) || $response['body'] == '') {
+                    Mage::throwException('No answer from API');
+                }
+
+                Mage::throwException('Failed to update Trello card: ' . $response);
             }
 
-            Mage::throwException($response['body']);
+            return Mage::helper('core')->jsonDecode($response['body']);
+        } catch (Exception $e) {
+            return false;
         }
-
-        return Mage::helper('core')->jsonDecode($response['body']);
     }
 }

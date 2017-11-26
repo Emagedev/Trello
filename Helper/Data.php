@@ -52,7 +52,11 @@ class Omedrec_Trello_Helper_Data extends Mage_Core_Helper_Data
             $statusCode = $statusCode->getStatus();
         }
 
-        $list = $this->getStatusLists()[$statusCode];
+        if (array_key_exists($statusCode, $this->getStatusLists())) {
+            $list = $this->getStatusLists()[$statusCode];
+        } else {
+            return false;
+        }
 
         return $list instanceof Omedrec_Trello_Model_List ? $list : false;
     }
