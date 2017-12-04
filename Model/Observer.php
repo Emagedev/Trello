@@ -46,7 +46,11 @@ class Omedrec_Trello_Model_Observer
             return;
         }
 
-        Mage::helper('trello/order')->createOrderCard($order);
+        try {
+            Mage::helper('trello/order')->createOrderCard($order);
+        } catch (Exception $e) {
+            Mage::logException($e);
+        }
     }
 
     /**
@@ -63,17 +67,19 @@ class Omedrec_Trello_Model_Observer
             return;
         }
 
-        Mage::helper('trello/order')->updateOrderStatusList($order, true);
+        try {
+            Mage::helper('trello/order')->updateOrderStatusList($order, true);
+        } catch (Exception $e) {
+            Mage::logException($e);
+        }
     }
 
     /**
      * Find orders that not changed last 3 days, mark them as
      * outdated to check their real status
      * If order was completed 3 or more days ago, archive card
-     *
-     * @param Varien_Event_Observer $observer
      */
-    public function markOrArchiveOutdatedOrders(Varien_Event_Observer $observer)
+    public function markOrArchiveOutdatedOrders()
     {
         /** @var Mage_Sales_Model_Resource_Order_Collection $orderCollection */
         $orderCollection = Mage::getModel('sales/order')->getCollection();

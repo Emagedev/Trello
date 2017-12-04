@@ -241,7 +241,23 @@ class Omedrec_Trello_Helper_Order extends Mage_Core_Helper_Abstract
     {
         $name = $order->getCustomerFirstname() . ' ' . $order->getCustomerLastname();
 
-        return $this->__('Created by %s', $name);
+        try {
+            /** @var VES_Vendors_Model_Vendor $vendor */
+            $vendor = Mage::getModel('vendors/vendor')->load($order->getVendorId());
+            $vendorTitle = $vendor->getTitle();
+        } catch (Exception $e) {
+            $vendorTitle = $this->__('Unknown');
+        }
+
+
+        $data = array(
+            $this->__('Created by: %s', $name),
+            $this->__('Vendor: %s', $vendorTitle),
+            $this->__('Grand Total: %s', $order->getGrandTotal()),
+            $this->__('Created at: %s', $order->getCreatedAt()),
+        );
+
+        return implode(PHP_EOL, $data);
     }
 
     /**

@@ -87,6 +87,17 @@
             </mark_order_cards_outdated_or_archive>
         </jobs>
     </crontab>
+    <adminhtml>
+        <translate>
+            <modules>
+                <Omedrec_Trello>
+                    <files>
+                        <default>Omedrec_Trello.csv</default>
+                    </files>
+                </Omedrec_Trello>
+            </modules>
+        </translate>
+    </adminhtml>
     <frontend>
         <translate>
             <modules>
