@@ -1,0 +1,109 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Emagedev extension for Magento
+ *
+ * NOTICE OF LICENSE
+ *
+ * Copyright (C) Effdocs, LLC - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ *
+ * This source file is proprietary and confidential
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade
+ * the Omedrec Welcome module to newer versions in the future.
+ *
+ * @copyright  Copyright (C) Effdocs, LLC (https://www.effdocs.com/)
+ * @license    http://www.binpress.com/license/view/l/45d152a594cd48488fda1a62931432e7
+ */
+-->
+<config>
+    <modules>
+        <Omedrec_Trello>
+            <version>0.2.0</version>
+        </Omedrec_Trello>
+    </modules>
+    <global>
+        <models>
+            <trello>
+                <class>Omedrec_Trello_Model</class>
+                <resourceModel>trello_resource</resourceModel>
+            </trello>
+            <trello_resource>
+                <class>Omedrec_Trello_Model_Resource</class>
+                <entities>
+                    <order>
+                        <table>trello_order</table>
+                    </order>
+                    <list>
+                        <table>trello_list</table>
+                    </list>
+                </entities>
+            </trello_resource>
+        </models>
+        <helpers>
+            <trello>
+                <class>Omedrec_Trello_Helper</class>
+            </trello>
+        </helpers>
+        <resources>
+            <omederc_trello_setup>
+                <setup>
+                    <module>Omedrec_Trello</module>
+                    <class>Mage_Catalog_Model_Resource_Setup</class>
+                </setup>
+            </omederc_trello_setup>
+        </resources>
+        <events>
+            <sales_order_place_after>
+                <observers>
+                    <order_add_trello_card>
+                        <class>trello/observer</class>
+                        <method>addOrderCard</method>
+                    </order_add_trello_card>
+                </observers>
+            </sales_order_place_after>
+            <sales_order_save_after>
+                <observers>
+                    <order_update_trello_card>
+                        <class>trello/observer</class>
+                        <method>updateOrderCard</method>
+                    </order_update_trello_card>
+                </observers>
+            </sales_order_save_after>
+        </events>
+    </global>
+    <crontab>
+        <jobs>
+            <mark_order_cards_outdated_or_archive>
+                <schedule>
+                    <cron_expr>30 2 * * *</cron_expr>
+                </schedule>
+                <run>
+                    <model>trello/observer::markOrArchiveOutdatedOrders</model>
+                </run>
+            </mark_order_cards_outdated_or_archive>
+        </jobs>
+    </crontab>
+    <frontend>
+        <translate>
+            <modules>
+                <Omedrec_Trello>
+                    <files>
+                        <default>Omedrec_Trello.csv</default>
+                    </files>
+                </Omedrec_Trello>
+            </modules>
+        </translate>
+    </frontend>
+    <phpunit>
+        <suite>
+            <modules>
+                <Omedrec_Trello/>
+            </modules>
+        </suite>
+    </phpunit>
+</config>
+
