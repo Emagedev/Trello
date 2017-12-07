@@ -111,4 +111,22 @@ class Omedrec_Trello_Model_Observer
             }
         }
     }
+
+    /**
+     * Add mass trello update option for adminhtml orders grid
+     *
+     * @param Varien_Event_Observer $observer
+     */
+    public function addMassTrelloUpdate(Varien_Event_Observer $observer)
+    {
+        $event = $observer->getEvent();
+
+        /** @var Omedrec_Sales_Block_Adminhtml_Sales_Order_Grid $grid */
+        $grid = $event->getGrid();
+
+        $grid->getMassactionBlock()->addItem('update_trello_status', array(
+            'label'=> Mage::helper('sales')->__('Update Trello Status'),
+            'url'  => $grid->getUrl('*/sales_trello/massUpdate'),
+        ));
+    }
 }

@@ -250,6 +250,7 @@ class Omedrec_Trello_Model_Api
 
             return Mage::helper('core')->jsonDecode($response['body']);
         } catch (Exception $e) {
+            Mage::logException($e);
             return false;
         }
     }

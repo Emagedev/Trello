@@ -97,7 +97,28 @@
                 </Omedrec_Trello>
             </modules>
         </translate>
+        <events>
+            <adminhtml_sales_order_grid_prepare_mass_action>
+                <observers>
+                    <order_grid_add_trello_mass_update>
+                        <class>trello/observer</class>
+                        <method>addMassTrelloUpdate</method>
+                    </order_grid_add_trello_mass_update>
+                </observers>
+            </adminhtml_sales_order_grid_prepare_mass_action>
+        </events>
     </adminhtml>
+    <admin>
+        <routers>
+            <adminhtml>
+                <args>
+                    <modules>
+                        <trello before="Mage_Adminhtml">Omedrec_Trello_Adminhtml</trello>
+                    </modules>
+                </args>
+            </adminhtml>
+        </routers>
+    </admin>
     <frontend>
         <translate>
             <modules>
