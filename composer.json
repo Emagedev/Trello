@@ -19,7 +19,7 @@
   "repositories": [
     {
       "type": "vcs",
-      "url": "https://github.com/Emagedev/Morpher.gitt"
+      "url": "https://github.com/Emagedev/Morpher.git"
     }
   ]
 }
