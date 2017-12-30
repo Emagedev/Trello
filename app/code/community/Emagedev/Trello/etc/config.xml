@@ -1,0 +1,144 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Emagedev extension for Magento
+ *
+ * NOTICE OF LICENSE
+ *
+ * Copyright (C) Effdocs, LLC - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ *
+ * This source file is proprietary and confidential
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade
+ * the Emagedev Trello module to newer versions in the future.
+ *
+ * @copyright  Copyright (C) Effdocs, LLC (https://www.effdocs.com/)
+ * @license    http://www.binpress.com/license/view/l/45d152a594cd48488fda1a62931432e7
+ */
+-->
+<config>
+    <modules>
+        <Emagedev_Trello>
+            <version>0.3.0</version>
+        </Emagedev_Trello>
+    </modules>
+    <global>
+        <models>
+            <trello>
+                <class>Emagedev_Trello_Model</class>
+                <resourceModel>trello_resource</resourceModel>
+            </trello>
+            <trello_resource>
+                <class>Emagedev_Trello_Model_Resource</class>
+                <entities>
+                    <order>
+                        <table>trello_order</table>
+                    </order>
+                    <list>
+                        <table>trello_list</table>
+                    </list>
+                </entities>
+            </trello_resource>
+        </models>
+        <helpers>
+            <trello>
+                <class>Emagedev_Trello_Helper</class>
+            </trello>
+        </helpers>
+        <resources>
+            <omederc_trello_setup>
+                <setup>
+                    <module>Emagedev_Trello</module>
+                    <class>Mage_Catalog_Model_Resource_Setup</class>
+                </setup>
+            </omederc_trello_setup>
+        </resources>
+        <events>
+            <sales_order_save_after>
+                <observers>
+                    <order_update_trello_card>
+                        <class>trello/observer</class>
+                        <method>updateOrderCard</method>
+                    </order_update_trello_card>
+                </observers>
+            </sales_order_save_after>
+        </events>
+    </global>
+    <crontab>
+        <jobs>
+            <mark_order_cards_outdated_or_archive>
+                <schedule>
+                    <cron_expr>30 2 * * *</cron_expr>
+                </schedule>
+                <run>
+                    <model>trello/observer::markOrArchiveOutdatedOrders</model>
+                </run>
+            </mark_order_cards_outdated_or_archive>
+        </jobs>
+    </crontab>
+    <adminhtml>
+        <translate>
+            <modules>
+                <Emagedev_Trello>
+                    <files>
+                        <default>Emagedev_Trello.csv</default>
+                    </files>
+                </Emagedev_Trello>
+            </modules>
+        </translate>
+        <events>
+            <adminhtml_sales_order_grid_prepare_mass_action>
+                <observers>
+                    <order_grid_add_trello_mass_update>
+                        <class>trello/observer</class>
+                        <method>addMassTrelloUpdate</method>
+                    </order_grid_add_trello_mass_update>
+                </observers>
+            </adminhtml_sales_order_grid_prepare_mass_action>
+        </events>
+    </adminhtml>
+    <admin>
+        <routers>
+            <adminhtml>
+                <args>
+                    <modules>
+                        <trello before="Mage_Adminhtml">Emagedev_Trello_Adminhtml</trello>
+                    </modules>
+                </args>
+            </adminhtml>
+        </routers>
+    </admin>
+    <frontend>
+        <translate>
+            <modules>
+                <Emagedev_Trello>
+                    <files>
+                        <default>Emagedev_Trello.csv</default>
+                    </files>
+                </Emagedev_Trello>
+            </modules>
+        </translate>
+    </frontend>
+    <default>
+        <trello_api>
+            <order_status>
+                <card_template><![CDATA[
+Customer: {{var customer}}
+Grand Total: {{var grand_total}}
+Created At: {{var created_at}}
+               ]]> </card_template>
+            </order_status>
+        </trello_api>
+    </default>
+    <phpunit>
+        <suite>
+            <modules>
+                <Emagedev_Trello/>
+            </modules>
+        </suite>
+    </phpunit>
+</config>
+

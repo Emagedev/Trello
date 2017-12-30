@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Emagedev extension for Magento
+ *
+ * NOTICE OF LICENSE
+ *
+ * Copyright (C) Effdocs, LLC - All Rights Reserved
+ * Unauthorized copying of this file, via any medium is strictly prohibited
+ *
+ * This source file is proprietary and confidential
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade
+ * the Emagedev Trello module to newer versions in the future.
+ *
+ * @copyright  Copyright (C) Effdocs, LLC (https://www.effdocs.com/)
+ * @license    http://www.binpress.com/license/view/l/45d152a594cd48488fda1a62931432e7
+ */
+-->
+<config>
+    <sections>
+        <trello_api>
+            <label>Trello API</label>
+            <frontend_type>text</frontend_type>
+            <sort_order>120</sort_order>
+            <show_in_default>1</show_in_default>
+            <tab>service</tab>
+            <groups>
+                <general translate="label">
+                    <label>General</label>
+                    <frontend_type>text</frontend_type>
+                    <sort_order>10</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <fields>
+                        <key translate="label comment">
+                            <label>Trello API key</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <comment><![CDATA[<p>Grab a key for your user from <a href="https://trello.com/app-key" target="_blank">https://trello.com/app-key</a></p>]]></comment>
+                        </key>
+                        <token translate="label comment">
+                            <label>Trello API token</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <comment><![CDATA[<p>Token to auhorize API user on behalf of which actions will be performed</p>]]></comment>
+                        </token>
+                    </fields>
+                </general>
+                <order_status translate="label">
+                    <label>Order Status</label>
+                    <frontend_type>text</frontend_type>
+                    <sort_order>20</sort_order>
+                    <show_in_default>1</show_in_default>
+                    <show_in_website>1</show_in_website>
+                    <show_in_store>1</show_in_store>
+                    <fields>
+                        <board_id translate="label comment">
+                            <label>Board ID</label>
+                            <frontend_type>text</frontend_type>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <comment><![CDATA[<p>Board ID, you can find it in Menu - More - Print and Export - JSON - id</p>]]></comment>
+                        </board_id>
+                        <card_template translate="label comment">
+                            <label>Card Template</label>
+                            <frontend_type>textarea</frontend_type>
+                            <sort_order>10</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <comment><![CDATA[Use it like customer address template.<br />N.B. you can extend data using the <code>trello_order_card_generate_description</code> observer handle.]]></comment>
+                        </card_template>
+                    </fields>
+                </order_status>
+            </groups>
+        </trello_api>
+    </sections>
+</config>

@@ -1,0 +1,5 @@
+app/code/community/Emagedev/Trello app/code/community/Emagedev/Trello
+app/etc/modules/Emagedev_Trello.xml app/etc/modules/Emagedev_Trello.xml
+app/locale/en_US/Emagedev_Trello.csv app/locale/en_US/Emagedev_Trello.csv
+app/locale/ru_RU/Emagedev_Trello.csv app/locale/ru_RU/Emagedev_Trello.csv
+LICENSE app/code/community/Emagedev/Emagedev_Trello/LICENSE
