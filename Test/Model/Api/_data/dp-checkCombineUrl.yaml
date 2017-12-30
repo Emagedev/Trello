@@ -1,0 +1,21 @@
+c0:
+  actions:
+    cards: ':id'
+  params:
+    name: test
+c1:
+  actions:
+    - 'cards'
+  params:
+    name: test
+c2:
+  actions:
+    lists: ':id'
+    cards: ':id'
+  params: []
+c3:
+  actions:
+    lists: ':id'
+    cards: ':id'
+  params:
+      name: test

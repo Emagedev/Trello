@@ -1,0 +1,8 @@
+c0:
+  url: 'https://api.trello.com/1/cards/:id?name=test'
+c1:
+  url: 'https://api.trello.com/1/cards?name=test'
+c2:
+  url: 'https://api.trello.com/1/lists/:id/cards/:id'
+c3:
+  url: 'https://api.trello.com/1/lists/:id/cards/:id?name=test'
