@@ -3,7 +3,7 @@
   "description": "Connect Your Magento™ 1.9 Orders With Trello™ Board",
   "type": "magento-module",
   "license": "BSD-3-Clause",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "authors": [
     {
       "name": "Dmitry Burlakov",
