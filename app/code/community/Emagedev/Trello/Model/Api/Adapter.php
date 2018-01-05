@@ -4,18 +4,23 @@
  *
  * NOTICE OF LICENSE
  *
- * Copyright (C) Effdocs, LLC - All Rights Reserved
- * Unauthorized copying of this file, via any medium is strictly prohibited
- *
- * This source file is proprietary and confidential
+ * This source file is subject to the new BSD license that is bundled
+ * with this package in the file LICENSE.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://framework.zend.com/license/new-bsd
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@zend.com so we can send you a copy immediately.
  *
  * DISCLAIMER
  *
  * Do not edit or add to this file if you wish to upgrade
- * the Emagedev Trello module to newer versions in the future.
+ * the Omedrec Welcome module to newer versions in the future.
+ * If you wish to customize the Omedrec Welcome module for your needs
+ * please refer to http://www.magentocommerce.com for more information.
  *
- * @copyright  Copyright (C) Effdocs, LLC
- * @license    http://www.binpress.com/license/view/l/45d152a594cd48488fda1a62931432e7
+ * @copyright  Copyright (C) Emagedev, LLC (https://www.emagedev.com/)
+ * @license    https://opensource.org/licenses/BSD-3-Clause     New BSD License
  */
 
 /**
@@ -130,8 +135,8 @@ class Emagedev_Trello_Model_Api_Adapter
             return $this->dispatchFailure($this->getAdapter()->getError());
         }
 
-        /** @var Omedrec_Welcome_Helper_Curl $curlHelper */
-        $curlHelper = Mage::helper('omedrec_welcome/curl');
+        /** @var Emagedev_Utils_Helper_Curl $curlHelper */
+        $curlHelper = Mage::helper('emagedev_utils/curl');
         $responseObject = $curlHelper->dispatchResponse($response);
 
         $code = $responseObject->getCode();

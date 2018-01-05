@@ -11,6 +11,7 @@
     }
   ],
   "require": {
+    "emagedev/utils": "*",
     "magento-hackathon/magento-composer-installer": "*"
   },
   "require-dev": {
@@ -19,7 +20,7 @@
   "repositories": [
     {
       "type": "vcs",
-      "url": "https://github.com/Emagedev/Morpher.git"
+      "url": "https://github.com/Emagedev/Trello.git"
     }
   ]
 }
