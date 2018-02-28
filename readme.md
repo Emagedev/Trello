@@ -1,13 +1,16 @@
 # Connect Your Magento&trade; 1.9 Orders With Trello&trade; Board
 
 ## Control Your Orders Statuses With Trello&trade;
+
+**Update coming soon**
+
 This module can help you to view your order's statuses realtime with Trello&trade; board updates. 
 All you need to do is to set up your API key & token and grab a board ID.
 You can read how to set up module [here](#setUp).
 
 **As for now, you cannot control your Magento&trade; orders using Trello&trade; Board.**
 
-_It will possibly be added in near future as we plan to do this for our store._
+_Will be released about 4 of March._
 
 Also, this module provide simple API methods to interact with Trello&trade;. If you want to know more, see [here](#api).
 
