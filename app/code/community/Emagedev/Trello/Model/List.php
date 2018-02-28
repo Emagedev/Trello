@@ -31,13 +31,6 @@
  */
 
 /**
- * @category   Emagedev
- * @package    Emagedev_Trello
- * @subpackage Model
- * @author     Dmitry Burlakov <dantaeusb@icloud.com>
- */
-
-/**
  * Class Emagedev_Trello_Model_List
  *
  * Trello List - Order Status connection
@@ -46,9 +39,23 @@
  * @method string getStatus()
  * @method $this setListId(string $listId)
  * @method string getListId()
+ * @method $this setBoardId(string $boardId)
+ * @method string getBoardId()
+ * @method $this setName(string $name)
+ * @method string getName()
  */
-class Emagedev_Trello_Model_List extends Mage_Core_Model_Abstract
+class Emagedev_Trello_Model_List extends Emagedev_Trello_Model_Trello_Entity_Abstract
 {
+    protected $status;
+
+    /**
+     * @var array
+     */
+    protected $apiDataMap = array(
+        'name'    => 'name',
+        'idBoard' => 'board_id'
+    );
+
     /**
      * Init the resource
      *
@@ -58,5 +65,92 @@ class Emagedev_Trello_Model_List extends Mage_Core_Model_Abstract
     {
         parent::_construct();
         $this->_init('trello/list');
+
+        $this->setBoardId($this->getDataHelper()->getBoardId());
+    }
+
+    public function loadFromTrello($trelloId)
+    {
+        return $this->load($trelloId, 'list_id');
+    }
+
+    /**
+     * Save data to Trello
+     *
+     * @todo: Make universal
+     *
+     * @return $this
+     */
+    protected function _beforeSave()
+    {
+        if ($this->doSync) {
+            if ($this->getCardId()) {
+                $this->sync();
+            } else {
+                $this->export();
+            }
+        }
+
+        return parent::_beforeSave();
+    }
+
+    /**
+     * Create Trello list with provided data
+     *
+     * @return array|string
+     */
+    public function export()
+    {
+        $params = $this->prepareParams();
+
+        $listResponse = $this->getAdapter()
+            ->run(
+                array('lists'),
+                Zend_Http_Client::POST,
+                $params
+            );
+
+        $response = $this->getAdapter()->decodeResponse($listResponse);
+        return $this->processResponse($response);
+    }
+
+    /**
+     * Update Trello list with provided data
+     *
+     * @return array|string
+     */
+    public function sync()
+    {
+        $params = $this->prepareParams();
+
+        $listResponse = $this->getAdapter()
+            ->run(
+                array('lists' => $this->getListId()),
+                Zend_Http_Client::PUT,
+                $params
+            );
+
+        $response = $this->getAdapter()->decodeResponse($listResponse);
+        return $this->processResponse($response);
+    }
+
+    protected function processResponse($response)
+    {
+        $this->setListId($response['id']);
+
+        return $this;
+    }
+
+    /**
+     * Fast method to archive list: update with closed param
+     *
+     * @param string $listId
+     * @param bool   $archive
+     *
+     * @return array|string
+     */
+    public function archive($listId, $archive = true)
+    {
+        return $this->update($listId, array('value' => $archive));
     }
 }

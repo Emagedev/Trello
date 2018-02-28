@@ -35,24 +35,8 @@
  *
  * API model - map different actions to requests
  */
-class Emagedev_Trello_Model_Api
+class Emagedev_Trello_Model_Card_Action
 {
-    /**
-     * Available card params to validate request
-     *
-     * @see https://developers.trello.com/v1.0/reference#cardsid-1
-     *
-     * @var array
-     */
-    protected $cardParams
-        = array(
-            'name', 'desc', 'closed',
-            'idMembers', 'idAttachmentCover',
-            'idList', 'idLabels',
-            'idBoard', 'pos', 'due',
-            'dueComplete', 'subscribed'
-        );
-
     /**
      * @var Emagedev_Trello_Model_Api_Adapter
      */
@@ -67,18 +51,16 @@ class Emagedev_Trello_Model_Api
      *
      * @return array|string
      */
-    public function createCard($params)
+    public function create($params)
     {
-        $this->checkParams($params);
-
         $cardResponse = $this->getAdapter()
             ->run(
-                array('cards'),
+                array('cards' => $params['card_id'], 'actions' => 'comments'),
                 Zend_Http_Client::POST,
                 $params
             );
 
-        return $this->decodeResponse($cardResponse);
+        return $this->getAdapter()->decodeResponse($cardResponse);
     }
 
     /**
@@ -88,7 +70,7 @@ class Emagedev_Trello_Model_Api
      *
      * @return array|string
      */
-    public function getCard($cardId)
+    public function get($cardId)
     {
         $cardResponse = $this->getAdapter()
             ->run(
@@ -96,7 +78,7 @@ class Emagedev_Trello_Model_Api
                 Zend_Http_Client::GET
             );
 
-        return $this->decodeResponse($cardResponse);
+        return $this->getAdapter()->decodeResponse($cardResponse);
     }
 
     /**
@@ -107,7 +89,7 @@ class Emagedev_Trello_Model_Api
      *
      * @return array|string
      */
-    public function updateCard($cardId, $params)
+    public function update($cardId, $params)
     {
         $this->checkParams($params);
 
@@ -118,7 +100,7 @@ class Emagedev_Trello_Model_Api
                 $params
             );
 
-        return $this->decodeResponse($cardResponse);
+        return $this->getAdapter()->decodeResponse($cardResponse);
     }
 
     /**
@@ -129,9 +111,9 @@ class Emagedev_Trello_Model_Api
      *
      * @return array|string
      */
-    public function archiveCard($cardId, $archive = true)
+    public function archive($cardId, $archive = true)
     {
-        return $this->updateCard($cardId, array('closed' => $archive));
+        return $this->update($cardId, array('closed' => $archive));
     }
 
     /**
@@ -139,72 +121,13 @@ class Emagedev_Trello_Model_Api
      *
      * @param $cardId
      */
-    public function deleteCard($cardId)
+    public function delete($cardId)
     {
         $this->getAdapter()
             ->run(
                 array('cards' => $cardId),
                 Zend_Http_Client::DELETE
             );
-    }
-
-    /**
-     * Create Trello list with provided data
-     *
-     * @param array $params
-     *
-     * @return array|string
-     */
-    public function createList($params)
-    {
-        if (
-            !array_key_exists('name', $params) || $params['name'] == ''
-            || !array_key_exists('idBoard', $params) || $params['idBoard'] == ''
-        ) {
-            Mage::throwException('To create list in trello, you should set name and idBoard params');
-        }
-
-        $listResponse = $this->getAdapter()
-            ->run(
-                array('lists'),
-                Zend_Http_Client::POST,
-                $params
-            );
-
-        return $this->decodeResponse($listResponse);
-    }
-
-    /**
-     * Update Trello list with provided data
-     *
-     * @param string $listId
-     * @param array  $params
-     *
-     * @return array|string
-     */
-    public function updateList($listId, $params = array())
-    {
-        $listResponse = $this->getAdapter()
-            ->run(
-                array('lists' => $listId),
-                Zend_Http_Client::PUT,
-                $params
-            );
-
-        return $this->decodeResponse($listResponse);
-    }
-
-    /**
-     * Fast method to archive list: update with closed param
-     *
-     * @param string $listId
-     * @param bool   $archive
-     *
-     * @return array|string
-     */
-    public function archiveList($listId, $archive = true)
-    {
-        return $this->updateList($listId, array('value' => $archive));
     }
 
     /**
@@ -237,28 +160,5 @@ class Emagedev_Trello_Model_Api
         }
 
         return $this->adapter;
-    }
-
-    /**
-     * Decode response: throw error if there is,
-     * or parse JSON otherwise
-     *
-     * @throws Mage_Core_Exception
-     *
-     * @param array $response
-     *
-     * @return array|string
-     */
-    protected function decodeResponse($response)
-    {
-        if (!is_array($response) || !array_key_exists('code', $response) || $response['code'] != 200) {
-            if (!is_array($response) || !array_key_exists('body', $response) || $response['body'] == '') {
-                Mage::throwException('No answer from API');
-            }
-
-            Mage::throwException('Failed to update Trello card: ' . $response);
-        }
-
-        return Mage::helper('core')->jsonDecode($response['body']);
     }
 }

@@ -29,7 +29,7 @@
  * @subpackage Model
  * @author     Dmitry Burlakov <dantaeusb@icloud.com>
  */
-class Emagedev_Trello_Model_Resource_List extends Mage_Core_Model_Mysql4_Abstract
+class Emagedev_Trello_Model_Resource_Action extends Mage_Core_Model_Mysql4_Abstract
 {
     /**
      * Init the table
@@ -38,6 +38,6 @@ class Emagedev_Trello_Model_Resource_List extends Mage_Core_Model_Mysql4_Abstrac
      */
     protected function _construct()
     {
-        $this->_init('trello/list', 'link_id');
+        $this->_init('trello/action', 'link_id');
     }
 }

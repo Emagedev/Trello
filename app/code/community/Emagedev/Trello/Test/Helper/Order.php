@@ -35,7 +35,7 @@
  */
 class Emagedev_Trello_Test_Helper_Order extends EcomDev_PHPUnit_Test_Case
 {
-    protected $alias = 'trello/order';
+    protected $alias = 'trello/card';
 
     /** @var EcomDev_PHPUnit_Mock_Proxy */
     protected $apiMock;
@@ -58,8 +58,8 @@ class Emagedev_Trello_Test_Helper_Order extends EcomDev_PHPUnit_Test_Case
 
         $params = array('param1' => 'value1');
 
-        /** @var Emagedev_Trello_Model_Order $card */
-        $card = Mage::getModel('trello/order')->load(1, 'order_id');
+        /** @var Emagedev_Trello_Model_Card $card */
+        $card = Mage::getModel('trello/card')->load(1, 'order_id');
 
         $this->apiMock
             ->expects($this->once())
@@ -127,8 +127,8 @@ class Emagedev_Trello_Test_Helper_Order extends EcomDev_PHPUnit_Test_Case
      */
     public function checkArchiveOrderCard()
     {
-        /** @var Emagedev_Trello_Model_Order $card */
-        $card = Mage::getModel('trello/order')->load(1, 'order_id');
+        /** @var Emagedev_Trello_Model_Card $card */
+        $card = Mage::getModel('trello/card')->load(1, 'order_id');
 
         $helper = $this->mockHelper($this->alias, array('getOrderCard'));
         $helper
@@ -165,8 +165,8 @@ class Emagedev_Trello_Test_Helper_Order extends EcomDev_PHPUnit_Test_Case
     {
         $this->apiMock->replaceByMock('model');
 
-        /** @var Emagedev_Trello_Model_Order $card */
-        $card = Mage::getModel('trello/order')->load(1, 'order_id');
+        /** @var Emagedev_Trello_Model_Card $card */
+        $card = Mage::getModel('trello/card')->load(1, 'order_id');
 
         $params = array(
             'dueComplete' => false

@@ -24,7 +24,6 @@
  */
 
 /**
- *
  * @category   Emagedev
  * @package    Emagedev_Trello
  * @subpackage Model

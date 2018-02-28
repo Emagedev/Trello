@@ -48,7 +48,7 @@ class Emagedev_Trello_Test_Model_Observer extends EcomDev_PHPUnit_Test_Case
         /** @var Emagedev_Trello_Model_Observer $observer */
         $observer = Mage::getModel($this->alias);
 
-        $helperMock = $this->mockHelper('trello/order', array('archiveOrder', 'markOrderOutdated'));
+        $helperMock = $this->mockHelper('trello/card', array('archiveOrder', 'markOrderOutdated'));
 
         $helperMock
             ->expects($this->once())

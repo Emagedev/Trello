@@ -31,41 +31,28 @@
  */
 
 /**
- * Class Emagedev_Trello_Model_List
+ * Class Emagedev_Trello_Model_Api
  *
- * Order - Trello Card connection
- *
- * @method $this setOrderId(int $orderId)
- * @method int getOrderId()
- * @method $this setCardId(string $cardId)
- * @method string getCardId()
- * @method $this setArchived(bool $archived)
- * @method bool getArchived()
+ * API model - map different actions to requests
  */
-class Emagedev_Trello_Model_Order extends Mage_Core_Model_Abstract
+abstract class Emagedev_Trello_Model_Trello_Entity_Resource_Collection_Abstract extends Mage_Core_Model_Mysql4_Collection_Abstract
 {
     /**
-     * Init the resource
-     *
-     * @return void
+     * @var Emagedev_Trello_Model_Api_Adapter
      */
-    public function _construct()
-    {
-        parent::_construct();
-        $this->_init('trello/order');
-    }
+    protected $adapter;
 
     /**
-     * Sometimes
+     * Get API adapter model
      *
-     * @return Mage_Core_Model_Abstract
+     * @return Emagedev_Trello_Model_Api_Adapter
      */
-    public function _beforeSave()
+    protected function getAdapter()
     {
-        if (is_null($this->getCardId()) || $this->getCardId() === '') {
-            Mage::throwException('Fetch card_id before saving Trello card model');
+        if (is_null($this->adapter)) {
+            $this->adapter = Mage::getModel('trello/api_adapter');
         }
 
-        return parent::_beforeSave();
+        return $this->adapter;
     }
 }

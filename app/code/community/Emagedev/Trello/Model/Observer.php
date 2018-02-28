@@ -37,6 +37,8 @@
  */
 class Emagedev_Trello_Model_Observer
 {
+    protected $actionsCache;
+
     /**
      * Update order card on Trello when order updated (saved)
      *
@@ -44,17 +46,30 @@ class Emagedev_Trello_Model_Observer
      */
     public function updateOrderCard(Varien_Event_Observer $observer)
     {
-        $event = $observer->getEvent();
-        $order = $event->getOrder();
-
-        if (!$order || !$order->getId()) {
-            return;
-        }
-
         try {
-            Mage::helper('trello/order')->updateOrderStatusList($order, true);
+            if (Mage::registry(Emagedev_Trello_Model_Webhook_Action::REGISTRY_PROCESSING_WEBHOOK_ACTION) === true) {
+                return;
+            }
+
+            $this->getDataHelper()->log('Observe order update', Zend_Log::DEBUG);
+
+            $event = $observer->getEvent();
+
+            /** @var Mage_Sales_Model_Order $order */
+            $order = $event->getOrder();
+
+            $this->getDataHelper()->log('Process order ' . $order->getid() . ' update', Zend_Log::DEBUG);
+
+            if (!$order || !$order->getId()) {
+                $this->getDataHelper()->log('Cannot process order update', Zend_Log::DEBUG);
+                return;
+            }
+
+            $this->getHelper()->updateOrderStatusList($order, true);
         } catch (Exception $e) {
             Mage::logException($e);
+            $this->getDataHelper()->log('Action update failed', Zend_Log::ERR);
+            $this->getDataHelper()->log($e->getMessage(), Zend_Log::ERR);
         }
     }
 
@@ -65,34 +80,46 @@ class Emagedev_Trello_Model_Observer
      */
     public function markOrArchiveOutdatedOrders()
     {
-        /** @var Mage_Sales_Model_Resource_Order_Collection $orderCollection */
-        $orderCollection = Mage::getModel('sales/order')->getCollection();
+        try {
+            $this->getDataHelper()->log('Observe outdated orders', Zend_Log::NOTICE);
 
-        /** @var Emagedev_Trello_Model_Resource_Order $cardResource */
-        $cardResource = Mage::getModel('trello/order')->getResource();
-        $cardResource->filterOrdersWithActiveCards($orderCollection);
+            /** @var Mage_Sales_Model_Resource_Order_Collection $orderCollection */
+            $orderCollection = Mage::getModel('sales/order')->getCollection();
 
-        $nowDate = new DateTime('now');
+            /** @var Emagedev_Trello_Model_Resource_Card $cardResource */
+            $cardResource = Mage::getModel('trello/card')->getResource();
+            $cardResource->filterOrdersWithActiveCards($orderCollection);
 
-        /** @var Emagedev_Trello_Helper_Order $orderHelper */
-        $orderHelper = Mage::helper('trello/order');
+            $nowDate = new DateTime('now');
 
-        /** @var Mage_Sales_Model_Order $order */
-        foreach ($orderCollection as $order) {
-            $orderDate = new DateTime($order->getUpdatedAt());
+            /** @var Emagedev_Trello_Helper_Order $orderHelper */
+            $orderHelper = Mage::helper('trello/order');
 
-            $days = $orderDate->diff($nowDate)->days;
+            /** @var Mage_Sales_Model_Order $order */
+            foreach ($orderCollection as $order) {
+                $orderDate = new DateTime($order->getUpdatedAt());
 
-            if ($days > 3) {
-                if ($order->getState() == Mage_Sales_Model_Order::STATE_COMPLETE) {
-                    $orderHelper->archiveOrder($order);
-                } elseif ($order->getState() == Mage_Sales_Model_Order::STATE_HOLDED) {
-                    // Do nothing with orders on hold
-                    continue;
-                } else {
-                    $orderHelper->markOrderOutdated($order);
+                $days = $orderDate->diff($nowDate)->days;
+
+                if ($days > 3) {
+                    if ($order->getState() == Mage_Sales_Model_Order::STATE_COMPLETE) {
+                        $this->getDataHelper()->log('Archiving order ' . $order->getId(), Zend_Log::NOTICE);
+
+                        $card = $orderHelper->getOrderCard($order);
+                        $card->archive();
+                    } elseif ($order->getState() == Mage_Sales_Model_Order::STATE_HOLDED) {
+                        // Do nothing with orders on hold
+                        continue;
+                    } else {
+                        $this->getDataHelper()->log('Order ' . $order->getId() . ' is outdated.', Zend_Log::NOTICE);
+                        $orderHelper->markOrderOutdated($order);
+                    }
                 }
             }
+        } catch (Exception $e) {
+            Mage::logException($e);
+            $this->getDataHelper()->log('Action update failed', Zend_Log::ERR);
+            $this->getDataHelper()->log($e->getMessage(), Zend_Log::ERR);
         }
     }
 
@@ -103,14 +130,132 @@ class Emagedev_Trello_Model_Observer
      */
     public function addMassTrelloUpdate(Varien_Event_Observer $observer)
     {
-        $event = $observer->getEvent();
+        try {
+            $event = $observer->getEvent();
 
-        /** @var Emagedev_Sales_Block_Adminhtml_Sales_Order_Grid $grid */
-        $grid = $event->getGrid();
+            /** @var Mage_Adminhtml_Block_Sales_Order_Grid $grid */
+            $grid = $event->getGrid();
 
-        $grid->getMassactionBlock()->addItem('update_trello_status', array(
-            'label'=> Mage::helper('sales')->__('Update Trello Status'),
-            'url'  => $grid->getUrl('*/sales_trello/massUpdate'),
-        ));
+            $grid->getMassactionBlock()->addItem('update_trello_status', array(
+                'label'=> Mage::helper('sales')->__('Update Trello Status'),
+                'url'  => $grid->getUrl('*/sales_trello/massUpdate'),
+            ));
+        } catch (Exception $e) {
+            Mage::logException($e);
+            $this->getDataHelper()->log('Add mass action failed', Zend_Log::ERR);
+            $this->getDataHelper()->log($e->getMessage(), Zend_Log::ERR);
+        }
+    }
+
+    /**
+     * Send admin comment to Trello card comments
+     *
+     * @param Varien_Event_Observer $observer
+     */
+    public function sendTrelloAction(Varien_Event_Observer $observer)
+    {
+        try {
+            if (Mage::registry(Emagedev_Trello_Model_Webhook_Action::REGISTRY_PROCESSING_WEBHOOK_ACTION) === true) {
+                return;
+            }
+
+            $event = $observer->getEvent();
+
+            /** @var Mage_Sales_Model_Order_Status_History $statusHistory */
+            $statusHistory = $event->getStatusHistory();
+
+            if ($this->ignoreStatusUpdate($statusHistory)) {
+                return;
+            }
+
+            $actions = $this->getTrelloCommentActions($statusHistory);
+
+            $action = $actions->getActionByHistoryCommentId($statusHistory->getId());
+
+            if (!$action) {
+                /** @var Emagedev_Trello_Model_Action $action */
+                $action = Mage::getModel('trello/action');
+                $action->importFromStatusHistory($event->getStatusHistory());
+            } else {
+                $action
+                    ->setOrder($statusHistory->getOrder())
+                    ->setText($statusHistory->getComment());
+            }
+
+            $action->save();
+        } catch (Exception $e) {
+            Mage::logException($e);
+            $this->getDataHelper()->log('Action update failed', Zend_Log::ERR);
+            $this->getDataHelper()->log($e->getMessage(), Zend_Log::ERR);
+        }
+    }
+
+    /**
+     * Should ibserver ignore this order comment
+     *
+     * @param Mage_Sales_Model_Order_Status_History $statusHistory
+     *
+     * @return bool
+     */
+    protected function ignoreStatusUpdate($statusHistory)
+    {
+        if (!$statusHistory->hasDataChanges()) {
+            $this->getDataHelper()->log('Ignore status ' . $statusHistory->getId() . ' update: no changes', Zend_Log::DEBUG);
+            return true;
+        }
+
+        if (!$statusHistory->getComment()) {
+            $this->getDataHelper()->log('Ignore status ' . $statusHistory->getId() . ' update: no comment', Zend_Log::DEBUG);
+            return true;
+        }
+
+        $this->getDataHelper()->log('Process status ' . $statusHistory->getId(), Zend_Log::DEBUG);
+        return false;
+    }
+
+    /**
+     * Get Trello comment-actions from card
+     *
+     * @param Mage_Sales_Model_Order_Status_History $statusHistory
+     *
+     * @return Emagedev_Trello_Model_Resource_Action_Collection
+     */
+    protected function getTrelloCommentActions($statusHistory)
+    {
+        $order = $statusHistory->getOrder();
+
+        if (!$order) {
+            $order = Mage::getModel('sales/order');
+            $order->load($statusHistory->getParentId());
+
+            $statusHistory->setOrder($order);
+        }
+
+        if (!array_key_exists($this->actionsCache, $statusHistory->getOrder()->getId())) {
+            /** @var Emagedev_Trello_Model_Resource_Action_Collection $collection */
+            $collection = Mage::getModel('trello/action')->getCollection();
+
+            $collection->addFieldToFilter('order_id', $statusHistory->getOrder()->getId());
+
+            $this->actionsCache[$statusHistory->getOrder()->getId()] = $collection;
+        }
+
+        return $this->actionsCache[$statusHistory->getOrder()->getId()];
+    }
+
+    /**
+     * @return Emagedev_Trello_Helper_Data
+     */
+    protected function getDataHelper()
+    {
+        return Mage::helper('trello');
+    }
+
+    /**
+     * @return Emagedev_Trello_Helper_Order
+     */
+    protected function getHelper()
+    {
+        return Mage::helper('trello/order');
     }
 }

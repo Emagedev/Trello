@@ -29,7 +29,7 @@
  * @subpackage Model
  * @author     Dmitry Burlakov <dantaeusb@icloud.com>
  */
-class Emagedev_Trello_Model_Resource_List extends Mage_Core_Model_Mysql4_Abstract
+class Emagedev_Trello_Model_Resource_Card extends Mage_Core_Model_Mysql4_Abstract
 {
     /**
      * Init the table
@@ -38,6 +38,25 @@ class Emagedev_Trello_Model_Resource_List extends Mage_Core_Model_Mysql4_Abstrac
      */
     protected function _construct()
     {
-        $this->_init('trello/list', 'link_id');
+        $this->_init('trello/card', 'link_id');
+    }
+
+    /**
+     * Join order cards an filter not archived
+     *
+     * @param Mage_Sales_Model_Resource_Order_Collection $orderCollection
+     *
+     * @return $this
+     */
+    public function filterOrdersWithActiveCards($orderCollection)
+    {
+        $orderCollection
+            ->getSelect()
+            ->joinInner(
+                array('order_card' => Mage::getSingleton('core/resource')->getTableName('trello/card')),
+                'order_card.order_id = main_table.entity_id AND archived = 0'
+            );
+
+        return $this;
     }
 }

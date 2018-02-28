@@ -215,7 +215,7 @@ class Emagedev_Trello_Model_Api_Adapter
                 ->addOptions(
                     array(
                         CURLOPT_CONNECTTIMEOUT => 1,
-                        CURLOPT_TIMEOUT        => 2
+                        CURLOPT_TIMEOUT        => 5
                     )
                 );
 
@@ -223,5 +223,38 @@ class Emagedev_Trello_Model_Api_Adapter
         }
 
         return $this->adapter;
+    }
+
+    /**
+     * Decode response: throw error if there is,
+     * or parse JSON otherwise
+     *
+     * @throws Mage_Core_Exception
+     *
+     * @param array $response
+     *
+     * @return array|string
+     */
+    public function decodeResponse($response)
+    {
+        if (!is_array($response) || !array_key_exists('code', $response) || $response['code'] != 200) {
+            if (!is_array($response) || !array_key_exists('body', $response) || $response['body'] == '') {
+                Mage::throwException('No answer from API.');
+                $this->getDataHelper()->log('API request failed (no content): ' . serialize($response), Zend_Log::ERR);
+            }
+
+            Mage::throwException('Failed to process Trello API request: ' . $response['body']);
+            $this->getDataHelper()->log('API request failed: ' . $response['body'], Zend_Log::ERR);
+        }
+
+        return Mage::helper('core')->jsonDecode($response['body']);
+    }
+
+    /**
+     * @return Emagedev_Trello_Helper_Data
+     */
+    protected function getDataHelper()
+    {
+        return Mage::helper('trello');
     }
 }

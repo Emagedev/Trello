@@ -27,10 +27,15 @@
 <config>
     <modules>
         <Emagedev_Trello>
-            <version>0.3.0</version>
+            <version>0.7.0</version>
         </Emagedev_Trello>
     </modules>
     <global>
+        <blocks>
+            <trello>
+                <class>Emagedev_Trello_Block</class>
+            </trello>
+        </blocks>
         <models>
             <trello>
                 <class>Emagedev_Trello_Model</class>
@@ -42,9 +47,21 @@
                     <order>
                         <table>trello_order</table>
                     </order>
+                    <card>
+                        <table>trello_order</table>
+                    </card>
                     <list>
                         <table>trello_list</table>
                     </list>
+                    <action>
+                        <table>trello_action</table>
+                    </action>
+                    <member>
+                        <table>trello_member</table>
+                    </member>
+                    <webhook>
+                        <table>trello_webhook</table>
+                    </webhook>
                 </entities>
             </trello_resource>
         </models>
@@ -103,7 +120,22 @@
                     </order_grid_add_trello_mass_update>
                 </observers>
             </adminhtml_sales_order_grid_prepare_mass_action>
+            <sales_order_status_history_save_after>
+                <observers>
+                    <order_status_history_to_trello>
+                        <class>trello/observer</class>
+                        <method>sendTrelloAction</method>
+                    </order_status_history_to_trello>
+                </observers>
+            </sales_order_status_history_save_after>
         </events>
+        <layout>
+            <updates>
+                <emagedev_trello>
+                    <file>trello.xml</file>
+                </emagedev_trello>
+            </updates>
+        </layout>
     </adminhtml>
     <admin>
         <routers>
@@ -117,6 +149,29 @@
         </routers>
     </admin>
     <frontend>
+        <routers>
+            <trello>
+                <use>standard</use>
+                <args>
+                    <module>Emagedev_Trello</module>
+                    <frontName>trello_secret_callback</frontName>
+                </args>
+            </trello>
+            <emagedev_trello_adminhtml>
+                <use>standard</use>
+                <args>
+                    <module>Emagedev_Trello</module>
+                    <frontName>adminhtml</frontName>
+                </args>
+            </emagedev_trello_adminhtml>
+            <emagedev_trello_trello>
+                <use>standard</use>
+                <args>
+                    <module>Emagedev_Trello</module>
+                    <frontName>trello</frontName>
+                </args>
+            </emagedev_trello_trello>
+        </routers>
         <translate>
             <modules>
                 <Emagedev_Trello>
@@ -134,8 +189,16 @@
 Customer: {{var customer}}
 Grand Total: {{var grand_total}}
 Created At: {{var created_at}}
-               ]]> </card_template>
+]]>
+                </card_template>
             </order_status>
+            <webhook>
+                <status>1</status>
+                <check>Never</check>
+            </webhook>
+            <developer>
+                <debug_log>0</debug_log>
+            </developer>
         </trello_api>
     </default>
     <phpunit>

@@ -6,7 +6,7 @@ $installer = $this;
 $installer->startSetup();
 
 $installer->getConnection()
-    ->addColumn($installer->getTable('trello/order'),'archived', array(
+    ->addColumn($installer->getTable('trello/card'),'archived', array(
         'type'      => Varien_Db_Ddl_Table::TYPE_BOOLEAN,
         'default'   => '0',
         'nullable'  => false,
@@ -31,9 +31,9 @@ $installer->getConnection()->addIndex(
 );
 
 $installer->getConnection()->addIndex(
-    $installer->getTable('trello/order'),
+    $installer->getTable('trello/card'),
     $installer->getIdxName(
-        'trello/order',
+        'trello/card',
         array(
             'order_id',
         ),

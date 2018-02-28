@@ -43,22 +43,34 @@ class Emagedev_Trello_Helper_Order extends Mage_Core_Helper_Abstract
      * @param Mage_Sales_Model_Order $order
      * @param bool                   $create
      *
-     * @return bool|Emagedev_Trello_Model_Order
+     * @return bool|Emagedev_Trello_Model_Card
      */
     public function getOrderCard(Mage_Sales_Model_Order $order, $create = false)
     {
-        /** @var Emagedev_Trello_Model_Order $orderCardLink */
-        $orderCardLink = Mage::getModel('trello/order')->load($order->getId(), 'order_id');
+        if (!$order || !$order->getId()) {
+            return false;
+        }
 
-        if (!$orderCardLink || !$orderCardLink->getId()) {
+        /** @var Emagedev_Trello_Model_Card $card */
+        $card = Mage::getModel('trello/card')->load($order->getId(), 'order_id');
+
+        if (!$card || !$card->getId()) {
             if (!$create) {
                 return false;
             }
 
-            $orderCardLink = $this->createOrderCard($order);
+            $card = $this->createOrderCard($order);
         }
 
-        return $orderCardLink;
+        Mage::dispatchEvent(
+            'trello_order_card_get_after',
+            array(
+                'order' => $order,
+                'card'  => $card
+            )
+        );
+
+        return $card;
     }
 
     /**
@@ -67,19 +79,34 @@ class Emagedev_Trello_Helper_Order extends Mage_Core_Helper_Abstract
      *
      * @param Mage_Sales_Model_Order $order
      *
-     * @return Emagedev_Trello_Model_Order
+     * @return Emagedev_Trello_Model_Card|false
      */
     public function createOrderCard(Mage_Sales_Model_Order $order)
     {
-        $status = $order->getStatus();
+        Mage::dispatchEvent(
+            'trello_order_card_create_before',
+            array(
+                'order' => $order
+            )
+        );
 
         // Fix cases, when order only created: use default status
         // (may vary based on order type, may be needs a fix)
-        if (is_null($status) || $status == '') {
-            $status = 'pending';
+        $statusCode = $order->getStatus();
+
+        if (is_null($statusCode) || $statusCode == '') {
+            $this->getDataHelper()->log('No status code provided order ' . $order->getId(), Zend_Log::DEBUG);
+            $statusCode = 'pending';
         }
 
-        $statusList = $this->getDataHelper()->getStatusListId($status);
+        $status = $this->getStatusByCode($statusCode);
+
+        if (!$status) {
+            $this->getDataHelper()->log('No status model found for code ' . $statusCode, Zend_Log::DEBUG);
+            return false;
+        }
+
+        $statusList = $this->getStatusList($status, true);
 
         if (!$statusList) {
             $statusList = $this->createStatusList($status);
@@ -87,77 +114,107 @@ class Emagedev_Trello_Helper_Order extends Mage_Core_Helper_Abstract
 
         $dateTime = new DateTime($order->getCreatedAt(), new DateTimeZone('UTC'));
 
-        $trelloCard = $this->getApi()->createCard(
+        /** @var Emagedev_Trello_Model_Card $card */
+        $card = Mage::getModel('trello/card');
+
+        $card
+            ->setName($this->__('Order #%d', $order->getIncrementId()))
+            ->setOrderId($order->getId())
+            ->setDescription($this->getOrderCardDescription($order))
+            ->setListId($statusList->getListId())
+            ->setDue($dateTime->format(DateTime::W3C))
+            ->setDueComplete(true);
+
+        $card->save();
+
+        Mage::dispatchEvent(
+            'trello_order_card_create_after',
             array(
-                'idList'      => $statusList->getListId(),
-                'name'        => $this->__('Order #%d', $order->getIncrementId()),
-                'desc'        => $this->getOrderCardDescription($order),
-                'due'         => $dateTime->format(DateTime::W3C),
-                'dueComplete' => 'true'
+                'order' => $order,
+                'card'  => $card
             )
         );
 
-        $trelloCard = new Varien_Object($trelloCard);
-
-        /** @var Emagedev_Trello_Model_Order $orderCardLink */
-        $orderCardLink = Mage::getModel('trello/order');
-
-        $orderCardLink
-            ->setOrderId($order->getId())
-            ->setCardId($trelloCard->getId());
-
-        $orderCardLink
-            ->save();
-
-        return $orderCardLink;
+        return $card;
     }
 
     /**
-     * Update order card and set new params
+     * Get trello card connected to order
      *
-     * @param Mage_Sales_Model_Order $order
-     * @param array                  $params
+     * @param Mage_Sales_Model_Order_Status $status
+     * @param bool                          $create
      *
-     * @return Varien_Object
+     * @return bool|Emagedev_Trello_Model_List
      */
-    public function updateOrderCard(Mage_Sales_Model_Order $order, $params)
+    public function getStatusList(Mage_Sales_Model_Order_Status $status, $create = false)
     {
-        $card = $this->getOrderCard($order);
-
-        if (!$card) {
+        if (!$status || !$status->getStatus()) {
             return false;
         }
 
-        $trelloCard = $this->getApi()
-            ->updateCard(
-                $card->getCardId(),
-                $params
-            );
+        /** @var Emagedev_Trello_Model_List $list */
+        $list = Mage::getModel('trello/list')->load($status->getStatus(), 'status');
 
-        return new Varien_Object($trelloCard);
+        if (!$list || !$list->getId()) {
+            if (!$create) {
+                return false;
+            }
+
+            $list = $this->createStatusList($status);
+        }
+
+        Mage::dispatchEvent(
+            'trello_status_list_get_after',
+            array(
+                'status' => $status,
+                'list'   => $list
+            )
+        );
+
+
+        return $list;
     }
 
     /**
-     * Mark order card as archived (update with archived param)
+     * Create Trello list for status
      *
-     * @param Mage_Sales_Model_Order $order
+     * @param Mage_Sales_Model_Order_Status $status
      *
-     * @return Varien_Object
+     * @return Emagedev_Trello_Model_List
      */
-    public function archiveOrder(Mage_Sales_Model_Order $order)
+    public function createStatusList(Mage_Sales_Model_Order_Status $status)
     {
-        $card = $this->getOrderCard($order);
+        Mage::dispatchEvent(
+            'trello_status_list_create_before',
+            array(
+                'status' => $status
+            )
+        );
 
-        $trelloCard = $this->getApi()
-            ->archiveCard(
-                $card->getCardId()
-            );
+        if (!($status instanceof Mage_Sales_Model_Order_Status)) {
+            /** @var Mage_Sales_Model_Order_Status $status */
+            $status = Mage::getModel('sales/order_status')->load($status, 'status');
+        }
 
-        $card
-            ->setArchived('1')
+        /** @var Emagedev_Trello_Model_List $list */
+        $list = Mage::getModel('trello/list');
+
+        $list
+            ->setName($status->getLabel())
+            ->setStatus($status->getStatus())
             ->save();
 
-        return new Varien_Object($trelloCard);
+        $this->getDataHelper()->dropListCache();
+
+        Mage::dispatchEvent(
+            'trello_status_list_create_after',
+            array(
+                'status' => $status,
+                'list'   => $list
+            )
+        );
+
+        return $list;
     }
 
     /**
@@ -170,68 +227,39 @@ class Emagedev_Trello_Helper_Order extends Mage_Core_Helper_Abstract
      */
     public function updateOrderStatusList($order, $create = false)
     {
-        $orderCard = $this->getOrderCard($order, $create);
+        $card = $this->getOrderCard($order, $create);
 
-        if (!$orderCard) {
+        if (!$card) {
+            $this->getDataHelper()->log('Failed to locate card for order ' . $order->getId(), Zend_Log::DEBUG);
             return false;
         }
 
-        $status = $order->getStatus();
+        $statusCode = $order->getStatus();
 
-        if (is_null($status) || $status == '') {
-            $status = 'pending';
+        if (is_null($statusCode) || $statusCode == '') {
+            $this->getDataHelper()->log('No status code provided order ' . $order->getId(), Zend_Log::DEBUG);
+            $statusCode = 'pending';
         }
 
-        $statusList = $this->getDataHelper()->getStatusListId($status);
+        $status = $this->getStatusByCode($statusCode);
 
-        if (!$statusList) {
-            $statusList = $this->createStatusList($status);
+        if (!$status) {
+            $this->getDataHelper()->log('No status model found for code ' . $statusCode, Zend_Log::DEBUG);
+            return false;
         }
 
-        $trelloCard = $this->getApi()->updateCard(
-            $orderCard->getCardId(),
-            array(
-                'idList' => $statusList->getListId(),
-            )
-        );
+        $list = $this->getStatusList($status, $create);
 
-        return new Varien_Object($trelloCard);
-    }
-
-    /**
-     * Create Trello list for status
-     *
-     * @param $status
-     *
-     * @return Emagedev_Trello_Model_List
-     */
-    public function createStatusList($status)
-    {
-        if (!($status instanceof Mage_Sales_Model_Order_Status)) {
-            /** @var Mage_Sales_Model_Order_Status $status */
-            $status = Mage::getModel('sales/order_status')->load($status, 'status');
+        if (!$list) {
+            $this->getDataHelper()->log('No status list provided order ' . $order->getId(), Zend_Log::DEBUG);
+            return false;
         }
 
-        $trelloList = $this->getApi()->createList(
-            array(
-                'name'    => $status->getStoreLabel(Mage::app()->getStore()),
-                'idBoard' => $this->getDataHelper()->getBoardId()
-            )
-        );
-
-        $trelloList = new Varien_Object($trelloList);
-
-        /** @var Emagedev_Trello_Model_List $statusListLink */
-        $statusListLink = Mage::getModel('trello/list');
-
-        $statusListLink
-            ->setStatus($status->getStatus())
-            ->setListId($trelloList->getId())
+        $card
+            ->setListId($list->getListId())
             ->save();
 
-        $this->getDataHelper()->dropListCache();
-
-        return $statusListLink;
+        return new Varien_Object($card);
     }
 
     /**
@@ -244,7 +272,13 @@ class Emagedev_Trello_Helper_Order extends Mage_Core_Helper_Abstract
      */
     public function markOrderOutdated($order)
     {
-        return $this->updateOrderCard($order, array('dueComplete' => false));
+        $card = $this->getOrderCard($order);
+
+        $card
+            ->setDueComplete(false)
+            ->save();
+
+        return $card;
     }
 
     /**
@@ -281,6 +315,23 @@ class Emagedev_Trello_Helper_Order extends Mage_Core_Helper_Abstract
         return $formatter->filter($cardDescriptionTemplate);
     }
 
+    protected function getStatusByCode($code)
+    {
+        /** @var Mage_Sales_Model_Order_Status $status */
+        $status = Mage::getModel('sales/order_status');
+        $status->load($code, 'status');
+
+        Mage::dispatchEvent(
+            'trello_status_get_by_code',
+            array(
+                'code'   => $code,
+                'status' => $status
+            )
+        );
+
+        return $status;
+    }
+
     /**
      * Get general helper
      *
@@ -289,15 +340,5 @@ class Emagedev_Trello_Helper_Order extends Mage_Core_Helper_Abstract
     protected function getDataHelper()
     {
         return Mage::helper('trello');
-    }
-
-    /**
-     * Get API model
-     *
-     * @return Emagedev_Trello_Model_Api
-     */
-    protected function getApi()
-    {
-        return Mage::getSingleton('trello/api');
     }
 }

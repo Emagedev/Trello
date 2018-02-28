@@ -6,7 +6,7 @@ $installer = $this;
 $installer->startSetup();
 
 $table = $installer->getConnection()
-    ->newTable($installer->getTable('trello/order'))
+    ->newTable($installer->getTable('trello/card'))
     ->addColumn('link_id', Varien_Db_Ddl_Table::TYPE_INTEGER, null, array(
         'identity'  => true,
         'unsigned'  => true,
@@ -22,8 +22,8 @@ $table = $installer->getConnection()
 $installer->getConnection()->createTable($table);
 
 $installer->getConnection()->addForeignKey(
-    $installer->getFkName('trello/order', 'order_id', 'sales/order', 'entity_id'),
-    $installer->getTable('trello/order'),
+    $installer->getFkName('trello/card', 'order_id', 'sales/order', 'entity_id'),
+    $installer->getTable('trello/card'),
     'order_id',
     $installer->getTable('sales/order'),
     'entity_id',

@@ -6,9 +6,9 @@ $installer = $this;
 $installer->startSetup();
 
 $installer->getConnection()->addIndex(
-    $installer->getTable('trello/order'),
+    $installer->getTable('trello/card'),
     $installer->getIdxName(
-        'trello/order',
+        'trello/card',
         array(
             'order_id',
         ),

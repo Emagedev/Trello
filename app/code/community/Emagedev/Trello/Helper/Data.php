@@ -47,6 +47,8 @@ class Emagedev_Trello_Helper_Data extends Mage_Core_Helper_Data
     /**
      * Get link to trello list that representing given status
      *
+     * @deprecated
+     *
      * @param $statusCode
      *
      * @return bool|Emagedev_Trello_Model_List
@@ -66,6 +68,26 @@ class Emagedev_Trello_Helper_Data extends Mage_Core_Helper_Data
         return $list instanceof Emagedev_Trello_Model_List ? $list : false;
     }
 
+    public function isConnectionSet()
+    {
+        return $this->getBoardId() && $this->getApiKey() && $this->getApiToken();
+    }
+
+    public function isWebhookActive()
+    {
+        return $this->getWebhookStatus() && $this->getBoardId() && $this->getWebhookId();
+    }
+
+    public function getApiKey()
+    {
+        return Mage::getStoreConfig('trello_api/general/key');
+    }
+
+    public function getApiToken()
+    {
+        return Mage::getStoreConfig('trello_api/general/token');
+    }
+
     /**
      * Get status board id
      *
@@ -74,6 +96,44 @@ class Emagedev_Trello_Helper_Data extends Mage_Core_Helper_Data
     public function getBoardId()
     {
         return Mage::getStoreConfig('trello_api/order_status/board_id');
+    }
+
+    /**
+     * Get status board id
+     *
+     * @return string
+     */
+    public function getWebhookId()
+    {
+        return Mage::getStoreConfig('trello_api/webhook/id');
+    }
+
+    /**
+     * Get status board id
+     *
+     * @return bool
+     */
+    public function getWebhookStatus()
+    {
+        return (bool)Mage::getStoreConfigFlag('trello_api/webhook/status');
+    }
+
+    public function updateWebhookCheck()
+    {
+        $date = date('l, j \o\f F, Y');
+
+        Mage::getConfig()->saveConfig('trello_api/webhook/check', $date, 'default', 0);
+        Mage::getConfig()->saveConfig('trello_api/webhook/status', '1','default', 0);
+
+        return true;
+    }
+
+    public function dropWebhookCheck()
+    {
+        Mage::getConfig()->saveConfig('trello_api/webhook/check', $this->__('Never'), 'default', 0);
+        Mage::getConfig()->saveConfig('trello_api/webhook/status', '0','default', 0);
+
+        return false;
     }
 
     /**
@@ -106,6 +166,17 @@ class Emagedev_Trello_Helper_Data extends Mage_Core_Helper_Data
     public function dropListCache()
     {
         $this->statusLists = null;
+        return $this;
+    }
+
+    public function log($message, $severity = Zend_Log::NOTICE)
+    {
+        if ($severity >= Zend_Log::NOTICE && !Mage::getStoreConfigFlag('trello_api/developer/debug_log')) {
+            return $this;
+        }
+
+        Mage::log($message, $severity, 'trello.log');
+
         return $this;
     }
 }

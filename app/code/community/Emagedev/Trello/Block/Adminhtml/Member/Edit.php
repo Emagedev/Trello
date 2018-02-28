@@ -1,6 +1,6 @@
 <?php
 /**
- * Effdocs LLC extension for Magento
+ * J.R. Dunn Jewelers. extension for Magento
  *
  * Long description of this file (if any...)
  *
@@ -20,7 +20,7 @@
  *
  * @category   Emagedev
  * @package    Emagedev_Trello
- * @copyright  Copyright (C) 2017 Copyright (C) Effdocs, LLC
+ * @copyright  Copyright (C) 2018 J.R. Dunn Jewelers.
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 
@@ -31,18 +31,34 @@
  *
  * @category   Emagedev
  * @package    Emagedev_Trello
- * @subpackage Model
+ * @subpackage Block
  * @author     Dmitry Burlakov <dantaeusb@icloud.com>
  */
-class Emagedev_Trello_Model_Resource_Order_Collection extends Mage_Core_Model_Mysql4_Collection_Abstract
+class Emagedev_Trello_Block_Adminhtml_Member_Edit extends Mage_Adminhtml_Block_Widget_Form_Container
 {
     /**
-     * Init model
-     *
-     * @return void
+     * Init grid container
      */
-    protected function _construct()
+    public function __construct()
     {
-        $this->_init('trello/order');
+        parent::__construct();
+        $this->_objectId = 'id';
+        $this->_controller = 'adminhtml_member';
+        $this->_blockGroup = 'trello';
+    }
+
+    /**
+     * Get container header text
+     *
+     * @return string
+     */
+    public function getHeaderText()
+    {
+        $data = Mage::registry('current_trello_member');
+        if ($data) {
+            return $this->__('Edit Item #%d', $this->escapeHtml($data->getId()));
+        } else {
+            return $this->__('New Item');
+        }
     }
 }

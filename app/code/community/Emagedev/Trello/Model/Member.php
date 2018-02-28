@@ -29,15 +29,50 @@
  * @subpackage Model
  * @author     Dmitry Burlakov <dantaeusb@icloud.com>
  */
-class Emagedev_Trello_Model_Resource_List extends Mage_Core_Model_Mysql4_Abstract
+
+/**
+ * Class Emagedev_Trello_Model_Member
+ *
+ * @method $this setAdminUserId(int $userId)
+ * @method int getAdminUserId()
+ * @method $this setTrelloMemberId(string $memberId)
+ * @method string getTrelloMemberId()
+ * @method $this setFullName(string $fullName)
+ * @method string getFullName()
+ */
+class Emagedev_Trello_Model_Member extends Mage_Core_Model_Abstract
 {
+    protected $adminUser;
+
     /**
-     * Init the table
+     * Init the resource
      *
      * @return void
      */
-    protected function _construct()
+    public function _construct()
     {
-        $this->_init('trello/list', 'link_id');
+        parent::_construct();
+        $this->_init('trello/member');
+    }
+
+    public function getAdminUser()
+    {
+        if (is_null($this->adminUser)) {
+            $userId = $this->getAdminUserId();
+
+            if ($userId) {
+                $adminUser = Mage::getModel('admin/user')->load($userId);
+
+                if ($adminUser && $adminUser->getId())
+                $this->adminUser = $adminUser;
+            }
+        }
+
+        return $this->adminUser;
+    }
+
+    public function loadFromTrello($trelloId)
+    {
+        return $this->load($trelloId, 'trello_member_id');
     }
 }
