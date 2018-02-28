@@ -10,7 +10,7 @@ You can read how to set up module [here](#setUp).
 
 **As for now, you cannot control your Magento&trade; orders using Trello&trade; Board.**
 
-_Will be released about 4 of March._
+_Will be released about 4th of March._
 
 Also, this module provide simple API methods to interact with Trello&trade;. If you want to know more, see [here](#api).
 
