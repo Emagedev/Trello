@@ -78,6 +78,11 @@ class Emagedev_Trello_Helper_Data extends Mage_Core_Helper_Data
         return $this->getWebhookStatus() && $this->getBoardId() && $this->getWebhookId();
     }
 
+    public function isEnabled()
+    {
+        return Mage::getStoreConfig('trello_api/general/enabled');
+    }
+
     public function getApiKey()
     {
         return Mage::getStoreConfig('trello_api/general/key');
@@ -86,6 +91,16 @@ class Emagedev_Trello_Helper_Data extends Mage_Core_Helper_Data
     public function getApiToken()
     {
         return Mage::getStoreConfig('trello_api/general/token');
+    }
+
+    /**
+     * Get count of days after which cards will be marked as outdated or archived
+     *
+     * @return int
+     */
+    public function getDaysBeforeOutdated()
+    {
+        return (int)Mage::getStoreConfig('trello_api/order_status/outdated_days');
     }
 
     /**
@@ -137,6 +152,42 @@ class Emagedev_Trello_Helper_Data extends Mage_Core_Helper_Data
     }
 
     /**
+     * WARNING: This method will truncate all tables
+     */
+    public function dropTrelloIntegration()
+    {
+        /** @var Mage_Core_Model_Resource $resource */
+        $resource = Mage::getSingleton('core/resource');
+
+        /** @var Varien_Db_Adapter_Interface $connection */
+        $connection = $resource->getConnection('core_write');
+
+        $connection->truncateTable($resource->getTableName('trello/action'));
+        $connection->truncateTable($resource->getTableName('trello/card'));
+        $connection->truncateTable($resource->getTableName('trello/member'));
+        $connection->truncateTable($resource->getTableName('trello/list'));
+
+        Mage::getConfig()->saveConfig('trello_api/webhook/id', '', 'default', 0);
+        Mage::getConfig()->saveConfig('trello_api/order_status/board_id', '', 'default', 0);
+        Mage::getConfig()->saveConfig('trello_api/general/key', '', 'default', 0);
+        Mage::getConfig()->saveConfig('trello_api/general/token', '', 'default', 0);
+
+        $this->dropWebhookCheck();
+
+        Mage::app()->getCacheInstance()->cleanType('config');
+    }
+
+    public function escapeTrelloMarkdown($text)
+    {
+        $text = str_replace('*', '\*', $text);
+        $text = str_replace('-', '\-', $text);
+        $text = str_replace('[', '\[', $text);
+        $text = str_replace(']', '\]', $text);
+
+        return $text;
+    }
+
+    /**
      * Get all board lists related to status
      *
      * @return array
@@ -156,6 +207,99 @@ class Emagedev_Trello_Helper_Data extends Mage_Core_Helper_Data
         }
 
         return $this->statusLists;
+    }
+
+    public function updateMembers()
+    {
+        /** @var Emagedev_Trello_Model_Resource_Member_Collection $existingCollection */
+        $existingCollection = Mage::getModel('trello/member')->getCollection();
+        $existingCollection->load();
+
+        /** @var Emagedev_Trello_Model_Resource_Member_Collection $newCollection */
+        $newCollection = Mage::getModel('trello/member')->getCollection();
+        $newCollection->fetchTrelloMembers();
+
+        $oldIds = $existingCollection->getItemsTrelloMemberIds();
+        $newIds = $newCollection->getItemsTrelloMemberIds();
+
+        $addedMemberIds = array_diff($newIds, $oldIds);
+        $removedMemberIds = array_diff($oldIds, $newIds);
+
+        foreach ($addedMemberIds as $addedMemberId) {
+            /** @var Emagedev_Trello_Model_Member $addedMember */
+            $addedMember = $newCollection->getItemByTrelloId($addedMemberId);
+            if ($existingCollection->getItemByTrelloId($addedMember->getTrelloMemberId())) {
+                continue;
+            }
+
+            $addedMember->save();
+        }
+
+        foreach ($removedMemberIds as $removedMemberId) {
+            /** @var Emagedev_Trello_Model_Member $removedMember */
+            $removedMember = $existingCollection->getItemByTrelloId($removedMemberId);
+
+            $removedMember
+                ->setActive(false)
+                ->save();
+        }
+    }
+
+    public function updateLabels()
+    {
+        /** @var Emagedev_Trello_Model_Resource_Label_Collection $existingCollection */
+        $existingCollection = Mage::getModel('trello/label')->getCollection();
+        $existingCollection->load();
+
+        /** @var Emagedev_Trello_Model_Resource_Label_Collection $newCollection */
+        $newCollection = Mage::getModel('trello/label')->getCollection();
+        $newCollection->fetchTrelloLabels();
+
+        $oldIds = $existingCollection->getItemsTrelloLabelIds();
+        $newIds = $newCollection->getItemsTrelloLabelIds();
+
+        $addedLabelIds = array_diff($newIds, $oldIds);
+        $removedLabelIds = array_diff($oldIds, $newIds);
+
+        foreach ($addedLabelIds as $addedLabelId) {
+            /** @var Emagedev_Trello_Model_Label $addedLabel */
+            $addedLabel = $newCollection->getItemByTrelloId($addedLabelId);
+            if ($existingCollection->getItemByTrelloId($addedLabel->getTrelloLabelId())) {
+                continue;
+            }
+
+            $addedLabel
+                ->disableSync()
+                ->save();
+        }
+
+        /** @var Emagedev_Trello_Model_Label $existedLabel */
+        foreach ($existingCollection as $existedLabel) {
+            if (in_array($existedLabel->getTrelloLabelId(), $removedLabelIds)) {
+                $existedLabel
+                    ->disableSync()
+                    ->setActive(false)
+                    ->save();
+            } else {
+                $fetchedLabel = $newCollection->getItemByTrelloId($existedLabel->getTrelloLabelId());
+
+                if ($fetchedLabel) {
+                    $hasUpdates = $existedLabel->getName() != $fetchedLabel->getName()
+                        || $existedLabel->getColor() != $fetchedLabel->getColor();
+
+                    if (!$hasUpdates) {
+                        continue;
+                    }
+
+                    $existedLabel
+                        ->disableSync()
+                        ->setName($fetchedLabel->getName())
+                        ->setColor($fetchedLabel->getColor())
+                        ->save();
+                }
+
+            }
+        }
     }
 
     /**

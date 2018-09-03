@@ -239,8 +239,8 @@ class Emagedev_Trello_Model_Api_Adapter
     {
         if (!is_array($response) || !array_key_exists('code', $response) || $response['code'] != 200) {
             if (!is_array($response) || !array_key_exists('body', $response) || $response['body'] == '') {
-                Mage::throwException('No answer from API.');
                 $this->getDataHelper()->log('API request failed (no content): ' . serialize($response), Zend_Log::ERR);
+                Mage::throwException('No answer from API: ' . $this->errors[0]);
             }
 
             Mage::throwException('Failed to process Trello API request: ' . $response['body']);

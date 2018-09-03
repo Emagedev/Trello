@@ -49,7 +49,7 @@ class Emagedev_Trello_Adminhtml_Sales_TrelloController extends Mage_Adminhtml_Co
         foreach ($orderIds as $orderId) {
             $order = Mage::getModel('sales/order')->load($orderId);
 
-            $helper->updateOrderStatusList($order, true);
+            $helper->updateOrderCard($order, true);
         }
 
         $this->_getSession()->addSuccess($this->__('%s order(s) updated in Trello board.', count($orderIds)));

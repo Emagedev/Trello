@@ -121,6 +121,12 @@ class Emagedev_Trello_Model_Webhook extends Varien_Object
 
     public function getCallbackUrl()
     {
-        return Mage::getUrl('trello_secret_callback/api_board/index');
+        $url = Mage::getUrl('trello_secret_callback/api_board/index');
+
+        if (Mage::getStoreConfigFlag('web/seo/use_rewrites')) {
+            $url = str_replace('index.php/', '', $url);
+        }
+
+        return $url;
     }
 }

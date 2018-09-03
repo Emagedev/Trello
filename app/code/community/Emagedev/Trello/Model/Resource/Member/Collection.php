@@ -43,43 +43,32 @@ class Emagedev_Trello_Model_Resource_Member_Collection extends Emagedev_Trello_M
 
     public function fetchTrelloMembers()
     {
+        if ($this->isLoaded()) {
+            Mage::throwException('Cannot fetch items from Trello: items already loaded.');
+        }
+
         /** @var Emagedev_Trello_Helper_Data $dataHelper */
         $dataHelper = Mage::helper('trello');
 
         $boardId = $dataHelper->getBoardId();
 
-        $cardResponse = $this->getAdapter()
+        $membersResponse = $this->getAdapter()
             ->run(
                 array('boards' => $boardId, 'members'),
                 Zend_Http_Client::GET
             );
 
-        $members = $this->getAdapter()->decodeResponse($cardResponse);
-        $memberIds = array();
+        $members = $this->getAdapter()->decodeResponse($membersResponse);
 
         foreach ($members as $member) {
-            $memberIds[] = $member['id'];
-        }
+            /** @var Emagedev_Trello_Model_Member $newMember */
+            $newMember = Mage::getModel('trello/member');
 
-        /** @var Emagedev_Trello_Model_Resource_Member_Collection $existingCollection */
-        $existingCollection = Mage::getModel('trello/member')->getCollection();
-        $existingCollection->addFieldToFilter('trello_member_id', array('in' => $memberIds));
+            $newMember
+                ->setTrelloMemberId($member['id'])
+                ->setFullName($member['fullName']);
 
-        foreach ($members as $member) {
-            $existingMember = $existingCollection->getItemByTrelloId($member['id']);
-
-            if ($existingMember && $existingMember->getId()) {
-                $this->addItem($existingMember);
-            } else {
-                /** @var Emagedev_Trello_Model_Member $newMember */
-                $newMember = Mage::getModel('trello/member');
-
-                $newMember
-                    ->setTrelloMemberId($member['id'])
-                    ->setFullName($member['fullName']);
-
-                $this->addItem($newMember);
-            }
+            $this->addItem($newMember);
         }
 
         $this->_setIsLoaded(true);
@@ -97,5 +86,21 @@ class Emagedev_Trello_Model_Resource_Member_Collection extends Emagedev_Trello_M
         }
 
         return false;
+    }
+
+    public function getItemsTrelloMemberIds()
+    {
+        $itemIds = array();
+
+        /** @var Emagedev_Trello_Model_Member $member */
+        foreach ($this as $member) {
+            if (!$member->getTrelloMemberId()) {
+                continue;
+            }
+
+            $itemIds[] = $member->getTrelloMemberId();
+        }
+
+        return $itemIds;
     }
 }

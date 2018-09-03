@@ -33,7 +33,7 @@
 /**
  * Class Emagedev_Trello_Model_Action
  *
- * @method $this setHistoryCommentId(int $orderId)
+ * @method $this setHistoryCommentId(int $commentId)
  * @method int getHistoryCommentId()
  * @method $this setActionId(string $actionId)
  * @method string getActionId()
@@ -41,13 +41,22 @@
  * @method int getOrderId()
  * @method $this setText(string $text)
  * @method string getText()
+ * @method $this setOriginExternal(bool $external)
+ * @method bool getOriginExternal()
  */
 class Emagedev_Trello_Model_Action extends Emagedev_Trello_Model_Trello_Entity_Abstract
 {
+    protected $_eventPrefix = 'trello_action';
+
     /**
      * @var Mage_Sales_Model_Order
      */
     protected $order;
+
+    /**
+     * @var Mage_Sales_Model_Order_Status_History
+     */
+    protected $statusHistory;
 
     /**
      * @var array
@@ -86,7 +95,7 @@ class Emagedev_Trello_Model_Action extends Emagedev_Trello_Model_Trello_Entity_A
     {
         $this->setOrder($statusHistory->getOrder());
 
-        $this->setHistoryCommentId($statusHistory->getId());
+        $this->setStatusHistory($statusHistory);
         $this->setOrderId($statusHistory->getOrder()->getId());
         $this->setText($statusHistory->getComment());
 
@@ -132,6 +141,38 @@ class Emagedev_Trello_Model_Action extends Emagedev_Trello_Model_Trello_Entity_A
     }
 
     /**
+     * @param Mage_Sales_Model_Order_Status_History $statusHistory
+     *
+     * @return $this
+     */
+    public function setStatusHistory($statusHistory)
+    {
+        $this->statusHistory = $statusHistory;
+        $this->setHistoryCommentId($statusHistory->getId());
+
+        return $this;
+    }
+
+    /**
+     * @return Mage_Sales_Model_Order_Status_History
+     */
+    public function getStatusHistory()
+    {
+        if (is_null($this->statusHistory)) {
+            $commentId = $this->getHistoryCommentId();
+
+            if ($commentId) {
+                $statusHistory = Mage::getModel('sales/order_status_history')->load($commentId);
+
+                if ($statusHistory && $statusHistory->getId())
+                    $this->statusHistory = $statusHistory;
+            }
+        }
+
+        return $this->statusHistory;
+    }
+
+    /**
      * @param Emagedev_Trello_Model_Card $card
      *
      * @return $this
@@ -173,7 +214,11 @@ class Emagedev_Trello_Model_Action extends Emagedev_Trello_Model_Trello_Entity_A
      */
     protected function _beforeSave()
     {
+        parent::_beforeSave();
+
         if ($this->doSync) {
+            $this->prepareExportText();
+
             if ($this->getActionId()) {
                 $this->sync();
             } else {
@@ -181,7 +226,78 @@ class Emagedev_Trello_Model_Action extends Emagedev_Trello_Model_Trello_Entity_A
             }
         }
 
-        return parent::_beforeSave();
+        return $this;
+    }
+
+    /**
+     * Often webhook creates action faster than model because model waits for cURL and
+     * Trello seems to make request for webhook before giving a response for action
+     * creation, so we have a race condition here creating duplicating comments.
+     * To prevent race condition, we adding comment id to text, that should be parsed
+     * in webhook to prevent duplicates.
+     *
+     * @return $this
+     */
+    public function prepareExportText()
+    {
+        if ($this->getOriginExternal()) {
+            return $this;
+        }
+
+        $text = $this->getText();
+        $headerObject = new Varien_Object(array(
+            'text' => '\#' . $this->getHistoryCommentId()
+        ));
+
+        Mage::dispatchEvent('trello_comment_add_header', array(
+            'action' => $this,
+            'header' => $headerObject
+        ));
+
+        $text = $headerObject->getText() . PHP_EOL . $text;
+
+        $this->setText($text);
+
+        return $this;
+    }
+
+    /**
+     * Parse added header to prevent race condition
+     *
+     * @param bool $trustHeader
+     *
+     * @return $this
+     */
+    public function parseTextHeader($trustHeader = true)
+    {
+        if ($this->getOriginExternal()) {
+            return $this;
+        }
+
+        $text = $this->getText();
+        $lines = explode(PHP_EOL, $text);
+        $header = array_shift($lines);
+        $matches = array();
+
+        $hasId = preg_match('/#(\d{1,9})(\s|$)/si', $header, $matches);
+
+        if (!$hasId) {
+            return $this;
+        }
+
+        Mage::dispatchEvent('trello_comment_parse_header', array(
+            'action' => $this,
+            'header' => $header
+        ));
+
+        $this
+            ->setText(implode(PHP_EOL, $lines));
+
+        if ($trustHeader || !$this->getHistoryCommentId()) {
+            $this->setHistoryCommentId($matches[1]);
+        }
+
+        return $this;
     }
 
     /**

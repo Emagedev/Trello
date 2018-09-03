@@ -27,7 +27,7 @@
 <config>
     <modules>
         <Emagedev_Trello>
-            <version>0.7.0</version>
+            <version>0.9.1</version>
         </Emagedev_Trello>
     </modules>
     <global>
@@ -62,6 +62,12 @@
                     <webhook>
                         <table>trello_webhook</table>
                     </webhook>
+                    <checklist>
+                        <table>trello_checklist</table>
+                    </checklist>
+                    <label>
+                        <table>trello_label</table>
+                    </label>
                 </entities>
             </trello_resource>
         </models>
@@ -124,10 +130,18 @@
                 <observers>
                     <order_status_history_to_trello>
                         <class>trello/observer</class>
-                        <method>sendTrelloAction</method>
+                        <method>findCommentChanges</method>
                     </order_status_history_to_trello>
                 </observers>
             </sales_order_status_history_save_after>
+            <sales_order_status_history_save_commit_after>
+                <observers>
+                    <order_status_history_to_trello>
+                        <class>trello/observer</class>
+                        <method>sendTrelloAction</method>
+                    </order_status_history_to_trello>
+                </observers>
+            </sales_order_status_history_save_commit_after>
         </events>
         <layout>
             <updates>
@@ -185,12 +199,55 @@
     <default>
         <trello_api>
             <order_status>
-                <card_template><![CDATA[
-Customer: {{var customer}}
-Grand Total: {{var grand_total}}
-Created At: {{var created_at}}
-]]>
+                <card_template>
+                    <![CDATA[Customer: {{var customer_name}}
+                    ===============================
+
+                    {{var buttons}}
+
+                    ----------------
+                    **Billing Details:**
+                    Name: {{var billing_address.getName()}}
+                    {{depend billing_address.getCompany()}}Company: {{var billing_address.getCompany()}}
+                    {{/depend}}Street: {{var billing_address.getStreetFull()}}
+                    City: {{var billing_address.getCity()}}
+                    {{depend shipping_address.getPhone()}}Phone: {{var billing_address.getPhone()}}
+                    {{/depend}}{{depend shipping_address.getEmail()}}Email: {{var billing_address.getEmail()}}
+                    {{/depend}}
+                    ----------------
+                    
+                    **Shipping Details:**
+                    Name: {{var shipping_address.getName()}}
+                    {{depend shipping_address.getCompany()}}Company: {{var shipping_address.getCompany()}}
+                    {{/depend}}Street: {{var shipping_address.getStreetFull()}}
+                    City: {{var shipping_address.getCity()}}
+                    {{depend shipping_address.getPhone()}}Phone: {{var shipping_address.getPhone()}}
+                    {{/depend}}{{depend shipping_address.getEmail()}}Email: {{var shipping_address.getEmail()}}
+                    {{/depend}}
+                    ----------------
+                    
+                    {{depend shipping_address.discountAmount()}}**Discount Amount:**
+                    Discount Amount: {{var order.discountAmount()}}
+                    Coupon Code: {{var order.getCouponCode()}}
+                    
+                    ----------------{{/depend}}
+                    
+                    **Items:**
+                    {{var items}}
+                    
+                    ----------------
+                    
+                    **Totals:**
+                    Subtotal: {{var order.getSubtotal()}}
+                    Grand Total: {{var order.getGrandTotal()}}
+                    {{depend order.getTotalPaid()}}Total Paid: {{var order.getTotalPaid()}}
+                    {{/depend}}{{depend order.getTotalRefunded()}}Total Refunded: {{var order.getTotalRefunded()}}
+                    {{/depend}}]]>
                 </card_template>
+                <item_template>
+                    <![CDATA[- {{var item.getName()}} [[{{var item.getSku()}}]({{var url}})]: {{var item.getPrice()}}]]>
+                </item_template>
+                <outdated_days>3</outdated_days>
             </order_status>
             <webhook>
                 <status>1</status>

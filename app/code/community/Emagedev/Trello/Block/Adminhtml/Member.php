@@ -25,10 +25,6 @@
  */
 
 /**
- * Short description of the class
- *
- * Long description of the class (if any...)
- *
  * @category   Emagedev
  * @package    Emagedev_Trello
  * @subpackage Block

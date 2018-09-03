@@ -26,15 +26,26 @@
 -->
 <config>
     <menu>
-        <system>
+        <sales>
             <children>
                 <trello module="trello">
-                    <title>Trello Members</title>
+                    <title>Trello</title>
                     <sort_order>2000</sort_order>
-                    <action>adminhtml/sales_trello_members</action>
+                    <children>
+                        <label>
+                            <title>Labels</title>
+                            <sort_order>40</sort_order>
+                            <action>adminhtml/sales_trello_label</action>
+                        </label>
+                        <members>
+                            <title>Members</title>
+                            <sort_order>50</sort_order>
+                            <action>adminhtml/sales_trello_members</action>
+                        </members>
+                    </children>
                 </trello>
             </children>
-        </system>
+        </sales>
     </menu>
     <acl>
         <resources>

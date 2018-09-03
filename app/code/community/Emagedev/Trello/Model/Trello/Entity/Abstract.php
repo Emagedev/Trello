@@ -82,7 +82,13 @@ abstract class Emagedev_Trello_Model_Trello_Entity_Abstract extends Mage_Core_Mo
         foreach ($this->apiDataMap as $apiParam => $dataKey)
         {
             if ($this->hasData($dataKey)) {
-                $params[$apiParam] = $this->getData($dataKey);
+                $param = $this->getData($dataKey);
+
+                if (is_bool($param)) {
+                    $param = $param ? 'true' : 'false';
+                }
+
+                $params[$apiParam] = $param;
             }
         }
 

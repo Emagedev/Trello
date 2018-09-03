@@ -46,7 +46,7 @@ class Emagedev_Trello_Adminhtml_Sales_Trello_MembersController extends Mage_Admi
     protected function _initAction()
     {
         $this->loadLayout()
-            //->_setActiveMenu('custom_modules/scheduled_content')
+            ->_setActiveMenu('sales/trello_members')
             ->_addBreadcrumb($this->__('Trello Members'), $this->__('Trello Members'));
         $this->_title($this->__('Trello Members'));
 
@@ -93,23 +93,6 @@ class Emagedev_Trello_Adminhtml_Sales_Trello_MembersController extends Mage_Admi
             $this->getLayout()->getBlock('head')->setCanLoadExtJs(true);
             $this->renderLayout();
         }
-    }
-
-    public function fetchMembersAction()
-    {
-        /** @var Emagedev_Trello_Model_Resource_Member_Collection $collection */
-        $collection = Mage::getModel('trello/member')->getCollection();
-
-        try {
-            $collection->fetchTrelloMembers();
-            $collection->save();
-        } catch (Exception $e) {
-            $this->_getSession()->addError($this->__('Unable To Fetch Members'));
-        }
-
-        $this->_getSession()->addSuccess($this->__('Members Fetched Successfully'));
-
-        $this->_redirect('*/*/');
     }
 
     /**
@@ -201,6 +184,26 @@ class Emagedev_Trello_Adminhtml_Sales_Trello_MembersController extends Mage_Admi
             }
         }
         $this->_getSession()->addError($this->__('Unable to find the item to delete.'));
+        $this->_redirect('*/*/');
+    }
+
+    public function fetchMembersAction()
+    {
+        /** @var Emagedev_Trello_Helper_Data $dataHelper */
+        $dataHelper = Mage::helper('trello');
+
+        try {
+            $dataHelper->updateMembers();
+        } catch (Exception $e) {
+            $this->_getSession()->addError($this->__('Unable To Fetch Members'));
+            Mage::logException($e);
+            $dataHelper->log('Unable To Fetch Members Due To Exception: ' . $e->getMessage(), Zend_Log::CRIT);
+
+            return $this->_redirect('*/*/');
+        }
+
+        $this->_getSession()->addSuccess($this->__('Members Fetched Successfully'));
+
         $this->_redirect('*/*/');
     }
 

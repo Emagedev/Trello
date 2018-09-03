@@ -46,6 +46,8 @@
  */
 class Emagedev_Trello_Model_List extends Emagedev_Trello_Model_Trello_Entity_Abstract
 {
+    protected $_eventPrefix = 'trello_list';
+
     protected $status;
 
     /**
@@ -83,6 +85,8 @@ class Emagedev_Trello_Model_List extends Emagedev_Trello_Model_Trello_Entity_Abs
      */
     protected function _beforeSave()
     {
+        parent::_beforeSave();
+
         if ($this->doSync) {
             if ($this->getCardId()) {
                 $this->sync();
@@ -91,7 +95,7 @@ class Emagedev_Trello_Model_List extends Emagedev_Trello_Model_Trello_Entity_Abs
             }
         }
 
-        return parent::_beforeSave();
+        return $this;
     }
 
     /**

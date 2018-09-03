@@ -42,6 +42,8 @@
  */
 class Emagedev_Trello_Model_Member extends Mage_Core_Model_Abstract
 {
+    protected $_eventPrefix = 'trello_member';
+
     protected $adminUser;
 
     /**

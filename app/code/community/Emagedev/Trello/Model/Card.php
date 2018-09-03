@@ -45,6 +45,8 @@
  * @method string getDescription()
  * @method $this setListId(string $listId)
  * @method string getListId()
+ * @method $this setLabelIds(string $labelIds)
+ * @method string getLabelIds()
  * @method $this setArchived(bool $archived)
  * @method bool getArchived()
  * @method $this setDue(string $due)
@@ -54,10 +56,17 @@
  */
 class Emagedev_Trello_Model_Card extends Emagedev_Trello_Model_Trello_Entity_Abstract
 {
+    protected $_eventPrefix = 'trello_card';
+
     /**
      * @var Mage_Sales_Model_Order
      */
     protected $order;
+
+    /**
+     * @var array
+     */
+    protected $labels;
 
     /**
      * @var array
@@ -67,6 +76,7 @@ class Emagedev_Trello_Model_Card extends Emagedev_Trello_Model_Trello_Entity_Abs
         'desc'        => 'description',
         'due'         => 'due',
         'dueComplete' => 'due_complete',
+        'idLabels'    => 'label_ids',
         'idList'      => 'list_id',
         'archived'    => 'archived'
     );
@@ -91,6 +101,10 @@ class Emagedev_Trello_Model_Card extends Emagedev_Trello_Model_Trello_Entity_Abs
      */
     protected function _beforeSave()
     {
+        parent::_beforeSave();
+
+        $this->prepareLabelIds();
+
         if ($this->doSync) {
             if ($this->getCardId()) {
                 $this->sync();
@@ -99,7 +113,7 @@ class Emagedev_Trello_Model_Card extends Emagedev_Trello_Model_Trello_Entity_Abs
             }
         }
 
-        return parent::_beforeSave();
+        return $this;
     }
 
     /**
@@ -225,6 +239,99 @@ class Emagedev_Trello_Model_Card extends Emagedev_Trello_Model_Trello_Entity_Abs
         return $this->order;
     }
 
+    public function setLabels($labels)
+    {
+        if ($labels instanceof Emagedev_Trello_Model_Resource_Label_Collection) {
+            $labels = $labels->load()->toArray();
+        }
+
+        $this->labels = $labels;
+        return $this;
+    }
+
+    /**
+     * @param Emagedev_Trello_Model_Label|string $label
+     *
+     * @return $this
+     */
+    public function addLabel($label)
+    {
+        if (is_string($label)) {
+            $label = $this->getLabelById($label);
+        }
+
+        if ($label instanceof Emagedev_Trello_Model_Label) {
+            $this->labels[$label->getTrelloLabelId()] = $label;
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param Emagedev_Trello_Model_Label|string $label
+     *
+     * @return $this
+     */
+    public function removeLabel($label)
+    {
+
+        if (is_string($label)) {
+            $label = $this->getLabelById($label);
+        }
+
+        if ($label instanceof Emagedev_Trello_Model_Label) {
+            /** @var Emagedev_Trello_Model_Label $label */
+            foreach ($this->getLabels() as $key => $labelToDelete) {
+                if ($labelToDelete->getTrelloLabelId() == $label->getTrelloLabelId()) {
+                    unset($this->labels[$key]);
+                }
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @param string $labelId
+     *
+     * @return Emagedev_Trello_Model_Label
+     */
+    protected function getLabelById($labelId)
+    {
+        return Mage::getModel('trello/label')->loadFromTrello($labelId);
+    }
+
+    protected function prepareLabelIds()
+    {
+        if (!empty($this->labels)) {
+            $trelloIds = array();
+
+            /** @var Emagedev_Trello_Model_Label $label */
+            foreach ($this->labels as $label) {
+                $trelloIds[] = $label->getTrelloLabelId();
+            }
+
+            $this->setLabelIds(implode(',', $trelloIds));
+        }
+
+        return $this;
+    }
+
+    public function getLabels()
+    {
+        if (is_null($this->labels)) {
+            $labelIds = explode(',', $this->getLabelIds());
+
+            /** @var Emagedev_Trello_Model_Resource_Label_Collection $labelCollection */
+            $labelCollection = Mage::getModel('trello/label')->getCollection();
+            $labelCollection->addFieldToFilter('trello_label_id', array('in' => $labelIds));
+
+            $this->labels = $labelCollection->load()->toArray();
+        }
+
+        return $this->labels;
+    }
+
     protected function processResponse($response)
     {
         $this->setCardId($response['id']);
@@ -239,10 +346,6 @@ class Emagedev_Trello_Model_Card extends Emagedev_Trello_Model_Trello_Entity_Abs
     {
         /** @var Emagedev_Trello_Model_Resource_Action_Collection $actions */
         $actions = Mage::getModel('trello/action')->getCollection();
-
-        $actions
-            ->fetchCardActions($card)
-            ->save();
     }
 
     /**
