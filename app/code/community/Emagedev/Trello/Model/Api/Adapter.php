@@ -15,8 +15,8 @@
  * DISCLAIMER
  *
  * Do not edit or add to this file if you wish to upgrade
- * the Omedrec Welcome module to newer versions in the future.
- * If you wish to customize the Omedrec Welcome module for your needs
+ * the Emagedev Trello module to newer versions in the future.
+ * If you wish to customize the Emagedev Trello module for your needs
  * please refer to http://www.magentocommerce.com for more information.
  *
  * @copyright  Copyright (C) Emagedev, LLC (https://www.emagedev.com/)
@@ -239,8 +239,8 @@ class Emagedev_Trello_Model_Api_Adapter
     {
         if (!is_array($response) || !array_key_exists('code', $response) || $response['code'] != 200) {
             if (!is_array($response) || !array_key_exists('body', $response) || $response['body'] == '') {
-                Mage::throwException('No answer from API.');
                 $this->getDataHelper()->log('API request failed (no content): ' . serialize($response), Zend_Log::ERR);
+                Mage::throwException('No answer from API: ' . $this->errors[0]);
             }
 
             Mage::throwException('Failed to process Trello API request: ' . $response['body']);

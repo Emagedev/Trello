@@ -15,8 +15,8 @@
  * DISCLAIMER
  *
  * Do not edit or add to this file if you wish to upgrade
- * the Omedrec Welcome module to newer versions in the future.
- * If you wish to customize the Omedrec Welcome module for your needs
+ * the Emagedev Trello module to newer versions in the future.
+ * If you wish to customize the Emagedev Trello module for your needs
  * please refer to http://www.magentocommerce.com for more information.
  *
  * @copyright  Copyright (C) Emagedev, LLC (https://www.emagedev.com/)
@@ -51,6 +51,7 @@ class Emagedev_Trello_Model_Webhook_Action extends Varien_Object
     const TYPE_COMMENT_CARD = 'commentCard';
     const TYPE_UPDATE_COMMENT = 'updateComment';
     const TYPE_UPDATE_CARD = 'updateCard';
+    const TYPE_ADD_ATTACHMENT = 'addAttachmentToCard';
 
     const REGISTRY_PROCESSING_WEBHOOK_ACTION = 'trello_processing_webhook_action';
 
@@ -74,7 +75,8 @@ class Emagedev_Trello_Model_Webhook_Action extends Varien_Object
                 $this->getType(), array(
                 self::TYPE_COMMENT_CARD,
                 self::TYPE_UPDATE_COMMENT,
-                self::TYPE_UPDATE_CARD
+                self::TYPE_UPDATE_CARD,
+                self::TYPE_ADD_ATTACHMENT
             ))
         ) {
             $this->getDataHelper()->log('Found action for webhook ' . $this->getType(), Zend_Log::DEBUG);
@@ -92,11 +94,34 @@ class Emagedev_Trello_Model_Webhook_Action extends Varien_Object
      */
     public function commentCard()
     {
-        $actionModel = Mage::getModel('trello/action')->load($this->getId(), 'action_id');
+        $action = Mage::getModel('trello/action')->load($this->getId(), 'action_id');
 
-        if ($actionModel && $actionModel->getId()) {
+        if ($action && $action->getId()) {
             $this->getDataHelper()->log('Action ' . $this->getId() . ' already registered', Zend_Log::DEBUG);
-            return;
+            return false;
+        }
+
+        $comment = $this->getPayload()['text'];
+        $comment = trim(strip_tags($comment));
+
+        /** @var Emagedev_Trello_Model_Action $action */
+        $action = Mage::getModel('trello/action');
+        $action
+            ->setText($comment)
+            ->parseTextHeader();
+
+        if ($action->getHistoryCommentId()) {
+            /** @var Mage_Sales_Model_Order_Status_History $commentModel */
+            $commentModel = Mage::getModel('sales/order_status_history')->load($action->getHistoryCommentId());
+
+            if ($commentModel && $commentModel->getId()) {
+                $this->getDataHelper()->log('Comment for action ' . $this->getId() . ' already existing (by header id)', Zend_Log::DEBUG);
+                return false;
+            } else {
+                $this->getDataHelper()->log('Cannot load comment #' . $action->getHistoryCommentId() . ' fetched from header of action', Zend_Log::ERR);
+            }
+        } else {
+            $this->getDataHelper()->log('Not found id in header for comment ' . $this->getId(), Zend_Log::DEBUG);
         }
 
         $member = $this->getActingMember();
@@ -118,16 +143,13 @@ class Emagedev_Trello_Model_Webhook_Action extends Varien_Object
             return false;
         }
 
-        $comment = $this->getPayload()['text'];
-        $comment = trim(strip_tags($comment));
-
         $this->getDataHelper()->log('Add comment to order #' . $order->getIncrementId(), Zend_Log::DEBUG);
 
         /** @var Mage_Sales_Model_Order_Status_History $commentModel */
-        $commentModel = $order->addStatusHistoryComment($comment, $order->getStatus());
+        $commentModel = $order->addStatusHistoryComment($action->getText(), $order->getStatus());
 
         $commentModel
-            ->setIsVisibleOnFront(true)
+            ->setIsVisibleOnFront(false)
             ->setIsCustomerNotified(false);
 
         Mage::dispatchEvent(
@@ -148,12 +170,11 @@ class Emagedev_Trello_Model_Webhook_Action extends Varien_Object
             'status_history' => $commentModel
         ));
 
-        /** @var Emagedev_Trello_Model_Action $action */
-        $action = Mage::getModel('trello/action');
         $action
-            ->setHistoryCommentId($commentModel->getId())
+            ->setStatusHistory($commentModel)
             ->setActionId($this->getId())
             ->setOrder($order)
+            ->setOriginExternal(true)
             ->disableSync()
             ->save();
 
@@ -197,10 +218,110 @@ class Emagedev_Trello_Model_Webhook_Action extends Varien_Object
         $comment = $this->getPayload()['action']['text'];
         $comment = trim(strip_tags($comment));
 
+        /** @var Emagedev_Trello_Model_Action $action */
+        $action = Mage::getModel('trello/action');
+        $action
+            ->setText($comment)
+            ->parseTextHeader(false);
+
         /** @var Mage_Sales_Model_Order_Status_History $commentModel */
         $commentModel = Mage::getModel('sales/order_status_history')->load($action->getHistoryCommentId());
-        $commentModel->setComment($comment);
+        $commentModel->setComment($action->getText());
+
+        Mage::dispatchEvent(
+            'trello_webhook_update_comment_order_card_before', array(
+            'member'         => $member,
+            'card'           => $card,
+            'order'          => $order,
+            'status_history' => $commentModel
+        ));
+
         $commentModel->save();
+
+        Mage::dispatchEvent(
+            'trello_webhook_update_comment_order_card_after', array(
+            'member'         => $member,
+            'card'           => $card,
+            'order'          => $order,
+            'status_history' => $commentModel
+        ));
+
+        return true;
+    }
+
+    public function addAttachmentToCard()
+    {
+        $actionModel = Mage::getModel('trello/action')->load($this->getId(), 'action_id');
+
+        if ($actionModel && $actionModel->getId()) {
+            $this->getDataHelper()->log('Action ' . $this->getId() . ' already registered', Zend_Log::DEBUG);
+            return;
+        }
+
+        /** @var Emagedev_Trello_Model_Member $member */
+        $member = Mage::getModel('trello/member');
+
+        $member->loadFromTrello($this->getIdMemberCreator());
+
+        /** @var Emagedev_Trello_Model_Card $card */
+        $card = Mage::getModel('trello/card');
+
+        $card->loadFromTrello($this->getPayload()['card']['id']);
+
+        if (!$card || !$card->getId()) {
+            $this->getDataHelper()->log('Cannot find card to add comment ' . $this->getPayload()['card']['id'], Zend_Log::ERR);
+            return false;
+        }
+
+        $order = $card->getOrder();
+
+        if (!$order || !$order->getId()) {
+            $this->getDataHelper()->log('Cannot find order to update comment ' . $this->getPayload()['card']['id'], Zend_Log::ERR);
+            return false;
+        }
+
+        $attachmentData = $this->getPayload()['attachment'];
+
+        $comment = 'Attachment:' . PHP_EOL .
+            '<a target="_blank" href="' . $attachmentData['url'] . '" title="Attachment">' .
+                $attachmentData['name']
+            . '</a>';
+
+        $this->getDataHelper()->log('Add attachment to order #' . $order->getIncrementId(), Zend_Log::DEBUG);
+
+        /** @var Mage_Sales_Model_Order_Status_History $commentModel */
+        $commentModel = $order->addStatusHistoryComment($comment, $order->getStatus());
+
+        $commentModel
+            ->setIsVisibleOnFront(true)
+            ->setIsCustomerNotified(false);
+
+        Mage::dispatchEvent(
+            'trello_webhook_attachment_order_card_before', array(
+            'member'         => $member,
+            'card'           => $card,
+            'order'          => $order,
+            'status_history' => $commentModel
+        ));
+
+        $commentModel->save();
+
+        Mage::dispatchEvent(
+            'trello_webhook_attachment_order_card_after', array(
+            'member'         => $member,
+            'card'           => $card,
+            'order'          => $order,
+            'status_history' => $commentModel
+        ));
+
+        /** @var Emagedev_Trello_Model_Action $action */
+        $action = Mage::getModel('trello/action');
+        $action
+            ->setStatusHistory($commentModel)
+            ->setActionId($this->getId())
+            ->setOrder($order)
+            ->disableSync()
+            ->save();
 
         return true;
     }
@@ -210,6 +331,7 @@ class Emagedev_Trello_Model_Webhook_Action extends Varien_Object
      */
 
     const CARD_MOVE_ACTION_TRANSLATION_KEY = 'action_move_card_from_list_to_list';
+    const CARD_UPDATE_DESCRIPTION_ACTION_TRANSLATION_KEY = 'action_changed_description_of_card';
 
     /**
      * Update card action - on any action from position move to list update
@@ -219,14 +341,21 @@ class Emagedev_Trello_Model_Webhook_Action extends Varien_Object
     public function updateCard()
     {
         /**
-         * Because we can only specify move action by its translation code
+         * Because we can only specify exact action by its translation code
          */
-        if ($this->getDisplay()['translationKey'] == self::CARD_MOVE_ACTION_TRANSLATION_KEY) {
-            $this->getDataHelper()->log('Status update by translation key ' . $this->getDisplay()['translationKey'], Zend_Log::DEBUG);
-            $this->moveCardUpdateStatus();
-        } else {
-            $this->getDataHelper()->log('Cannot process card update by translation key ' . $this->getDisplay()['translationKey'], Zend_Log::DEBUG);
+        switch ($this->getDisplay()['translationKey']) {
+            case self::CARD_MOVE_ACTION_TRANSLATION_KEY:
+                $this->getDataHelper()->log('Status update by translation key ' . $this->getDisplay()['translationKey'], Zend_Log::DEBUG);
+                return $this->moveCardUpdateStatus();
+            case self::CARD_UPDATE_DESCRIPTION_ACTION_TRANSLATION_KEY:
+                $this->getDataHelper()->log('Description update by translation key ' . $this->getDisplay()['translationKey'], Zend_Log::DEBUG);
+                return $this->cardDescriptionUpdate();
+            default:
+                $this->getDataHelper()->log('Cannot process card update by translation key ' . $this->getDisplay()['translationKey'], Zend_Log::DEBUG);
+                break;
         }
+
+        return false;
     }
 
     /**
@@ -289,6 +418,40 @@ class Emagedev_Trello_Model_Webhook_Action extends Varien_Object
         ));
 
         $order->save();
+
+        return true;
+    }
+
+    /**
+     * Run event when card description updated
+     *
+     * @return bool
+     */
+    protected function cardDescriptionUpdate()
+    {
+        $member = $this->getActingMember();
+
+        /** @var Emagedev_Trello_Model_Card $card */
+        $card = Mage::getModel('trello/card');
+
+        $card->loadFromTrello($this->getPayload()['card']['id']);
+
+        if (!$card || !$card->getId()) {
+            $this->getDataHelper()->log('Cannot find card to update ' . $this->getPayload()['card']['id'], Zend_Log::ERR);
+            return false;
+        }
+
+        $order = $card->getOrder();
+
+        Mage::dispatchEvent(
+            'trello_webhook_edit_order_card_description', array(
+            'action'         => $this,
+            'member'         => $member,
+            'card'           => $card,
+            'order'          => $order
+        ));
+
+        return true;
     }
 
     /**

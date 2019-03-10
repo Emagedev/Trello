@@ -15,8 +15,8 @@
  * DISCLAIMER
  *
  * Do not edit or add to this file if you wish to upgrade
- * the Omedrec Welcome module to newer versions in the future.
- * If you wish to customize the Omedrec Welcome module for your needs
+ * the Emagedev Trello module to newer versions in the future.
+ * If you wish to customize the Emagedev Trello module for your needs
  * please refer to http://www.magentocommerce.com for more information.
  *
  * @copyright  Copyright (C) Emagedev, LLC (https://www.emagedev.com/)
@@ -82,7 +82,13 @@ abstract class Emagedev_Trello_Model_Trello_Entity_Abstract extends Mage_Core_Mo
         foreach ($this->apiDataMap as $apiParam => $dataKey)
         {
             if ($this->hasData($dataKey)) {
-                $params[$apiParam] = $this->getData($dataKey);
+                $param = $this->getData($dataKey);
+
+                if (is_bool($param)) {
+                    $param = $param ? 'true' : 'false';
+                }
+
+                $params[$apiParam] = $param;
             }
         }
 

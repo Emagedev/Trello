@@ -15,8 +15,8 @@
  * DISCLAIMER
  *
  * Do not edit or add to this file if you wish to upgrade
- * the Omedrec Welcome module to newer versions in the future.
- * If you wish to customize the Omedrec Welcome module for your needs
+ * the Emagedev Trello module to newer versions in the future.
+ * If you wish to customize the Emagedev Trello module for your needs
  * please refer to http://www.magentocommerce.com for more information.
  *
  * @copyright  Copyright (C) Emagedev, LLC (https://www.emagedev.com/)
@@ -39,6 +39,8 @@ class Emagedev_Trello_Model_Observer
 {
     protected $actionsCache;
 
+    protected $commentsToUpdateCache = array();
+
     /**
      * Update order card on Trello when order updated (saved)
      *
@@ -47,6 +49,10 @@ class Emagedev_Trello_Model_Observer
     public function updateOrderCard(Varien_Event_Observer $observer)
     {
         try {
+            if (!$this->isEnabled()) {
+                return;
+            }
+
             if (Mage::registry(Emagedev_Trello_Model_Webhook_Action::REGISTRY_PROCESSING_WEBHOOK_ACTION) === true) {
                 return;
             }
@@ -65,7 +71,7 @@ class Emagedev_Trello_Model_Observer
                 return;
             }
 
-            $this->getHelper()->updateOrderStatusList($order, true);
+            $this->getHelper()->updateOrderCard($order, true);
         } catch (Exception $e) {
             Mage::logException($e);
             $this->getDataHelper()->log('Action update failed', Zend_Log::ERR);
@@ -81,6 +87,16 @@ class Emagedev_Trello_Model_Observer
     public function markOrArchiveOutdatedOrders()
     {
         try {
+            if (!$this->isEnabled()) {
+                return;
+            }
+
+            $daysBeforeOutdated = $this->getDataHelper()->getDaysBeforeOutdated();
+
+            if ($daysBeforeOutdated === 0) {
+                return;
+            }
+
             $this->getDataHelper()->log('Observe outdated orders', Zend_Log::NOTICE);
 
             /** @var Mage_Sales_Model_Resource_Order_Collection $orderCollection */
@@ -101,7 +117,7 @@ class Emagedev_Trello_Model_Observer
 
                 $days = $orderDate->diff($nowDate)->days;
 
-                if ($days > 3) {
+                if ($days > $daysBeforeOutdated) {
                     if ($order->getState() == Mage_Sales_Model_Order::STATE_COMPLETE) {
                         $this->getDataHelper()->log('Archiving order ' . $order->getId(), Zend_Log::NOTICE);
 
@@ -131,6 +147,10 @@ class Emagedev_Trello_Model_Observer
     public function addMassTrelloUpdate(Varien_Event_Observer $observer)
     {
         try {
+            if (!$this->isEnabled()) {
+                return;
+            }
+
             $event = $observer->getEvent();
 
             /** @var Mage_Adminhtml_Block_Sales_Order_Grid $grid */
@@ -155,6 +175,10 @@ class Emagedev_Trello_Model_Observer
     public function sendTrelloAction(Varien_Event_Observer $observer)
     {
         try {
+            if (!$this->isEnabled()) {
+                return;
+            }
+
             if (Mage::registry(Emagedev_Trello_Model_Webhook_Action::REGISTRY_PROCESSING_WEBHOOK_ACTION) === true) {
                 return;
             }
@@ -164,8 +188,11 @@ class Emagedev_Trello_Model_Observer
             /** @var Mage_Sales_Model_Order_Status_History $statusHistory */
             $statusHistory = $event->getStatusHistory();
 
-            if ($this->ignoreStatusUpdate($statusHistory)) {
+            if (!in_array($statusHistory->getId(), $this->commentsToUpdateCache)) {
+                $this->getDataHelper()->log('Ignore status ' . $statusHistory->getId() . ' update: not in update cache', Zend_Log::DEBUG);
                 return;
+            } else {
+                $this->getDataHelper()->log('Process status ' . $statusHistory->getId(), Zend_Log::DEBUG);
             }
 
             $actions = $this->getTrelloCommentActions($statusHistory);
@@ -190,6 +217,32 @@ class Emagedev_Trello_Model_Observer
         }
     }
 
+    public function findCommentChanges(Varien_Event_Observer $observer)
+    {
+        try {
+            if (!$this->isEnabled()) {
+                return;
+            }
+
+            if (Mage::registry(Emagedev_Trello_Model_Webhook_Action::REGISTRY_PROCESSING_WEBHOOK_ACTION) === true) {
+                return;
+            }
+
+            $event = $observer->getEvent();
+
+            /** @var Mage_Sales_Model_Order_Status_History $statusHistory */
+            $statusHistory = $event->getStatusHistory();
+
+            if (!$this->ignoreStatusUpdate($statusHistory)) {
+                $this->commentsToUpdateCache[] = $statusHistory->getId();
+            }
+        } catch (Exception $e) {
+            Mage::logException($e);
+            $this->getDataHelper()->log('Failed to find comment changes', Zend_Log::ERR);
+            $this->getDataHelper()->log($e->getMessage(), Zend_Log::ERR);
+        }
+    }
+
     /**
      * Should ibserver ignore this order comment
      *
@@ -209,7 +262,11 @@ class Emagedev_Trello_Model_Observer
             return true;
         }
 
-        $this->getDataHelper()->log('Process status ' . $statusHistory->getId(), Zend_Log::DEBUG);
+        if ($statusHistory->getOrigData('comment') == $statusHistory->getData('comment')) {
+            $this->getDataHelper()->log('Ignore status ' . $statusHistory->getId() . ' update: comment not changed', Zend_Log::DEBUG);
+            return true;
+        }
+
         return false;
     }
 
@@ -241,6 +298,14 @@ class Emagedev_Trello_Model_Observer
         }
 
         return $this->actionsCache[$statusHistory->getOrder()->getId()];
+    }
+
+    /**
+     * @return bool
+     */
+    protected function isEnabled()
+    {
+        return (bool)$this->getDataHelper()->isEnabled();
     }
 
     /**

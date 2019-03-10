@@ -16,8 +16,8 @@
  * DISCLAIMER
  *
  * Do not edit or add to this file if you wish to upgrade
- * the Omedrec Welcome module to newer versions in the future.
- * If you wish to customize the Omedrec Welcome module for your needs
+ * the Emagedev Trello module to newer versions in the future.
+ * If you wish to customize the Emagedev Trello module for your needs
  * please refer to http://www.magentocommerce.com for more information.
  *
  * @copyright  Copyright (C) Emagedev, LLC (https://www.emagedev.com/)
@@ -41,6 +41,13 @@
                     <show_in_website>1</show_in_website>
                     <show_in_store>1</show_in_store>
                     <fields>
+                        <enabled translate="label comment">
+                            <label>Enabled</label>
+                            <frontend_type>select</frontend_type>
+                            <source_model>adminhtml/system_config_source_yesno</source_model>
+                            <sort_order>5</sort_order>
+                            <show_in_default>1</show_in_default>
+                        </enabled>
                         <key translate="label comment">
                             <label>Trello API key</label>
                             <frontend_type>text</frontend_type>
@@ -134,6 +141,20 @@
                             <show_in_default>1</show_in_default>
                             <comment><![CDATA[Use it like customer address template.<br />N.B. you can extend data using the <code>trello_order_card_generate_description</code> observer handle.]]></comment>
                         </card_template>
+                        <item_template translate="label comment">
+                            <label>Item Template</label>
+                            <frontend_type>textarea</frontend_type>
+                            <sort_order>15</sort_order>
+                            <show_in_default>1</show_in_default>
+                        </item_template>
+                        <outdated_days translate="label comment">
+                            <label>Days Before Outdated</label>
+                            <frontend_type>text</frontend_type>
+                            <validate>required-entry validate-number</validate>
+                            <sort_order>20</sort_order>
+                            <show_in_default>1</show_in_default>
+                            <comment><![CDATA[Order card will be marked as past due or archived (for orders in complete state) if not updated this count of days. 0 - never due and archive.]]></comment>
+                        </outdated_days>
                     </fields>
                 </order_status>
                 <developer translate="label">

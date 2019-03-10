@@ -15,8 +15,8 @@
  * DISCLAIMER
  *
  * Do not edit or add to this file if you wish to upgrade
- * the Omedrec Welcome module to newer versions in the future.
- * If you wish to customize the Omedrec Welcome module for your needs
+ * the Emagedev Trello module to newer versions in the future.
+ * If you wish to customize the Emagedev Trello module for your needs
  * please refer to http://www.magentocommerce.com for more information.
  *
  * @copyright  Copyright (C) Emagedev, LLC (https://www.emagedev.com/)
@@ -47,6 +47,10 @@ class Emagedev_Trello_Helper_Order extends Mage_Core_Helper_Abstract
      */
     public function getOrderCard(Mage_Sales_Model_Order $order, $create = false)
     {
+        if (!$this->getDataHelper()->isEnabled()) {
+            return false;
+        }
+
         if (!$order || !$order->getId()) {
             return false;
         }
@@ -83,12 +87,9 @@ class Emagedev_Trello_Helper_Order extends Mage_Core_Helper_Abstract
      */
     public function createOrderCard(Mage_Sales_Model_Order $order)
     {
-        Mage::dispatchEvent(
-            'trello_order_card_create_before',
-            array(
-                'order' => $order
-            )
-        );
+        if (!$this->getDataHelper()->isEnabled()) {
+            return false;
+        }
 
         // Fix cases, when order only created: use default status
         // (may vary based on order type, may be needs a fix)
@@ -99,7 +100,7 @@ class Emagedev_Trello_Helper_Order extends Mage_Core_Helper_Abstract
             $statusCode = 'pending';
         }
 
-        $status = $this->getStatusByCode($statusCode);
+        $status = $this->getStatusByCode($statusCode, $order);
 
         if (!$status) {
             $this->getDataHelper()->log('No status model found for code ' . $statusCode, Zend_Log::DEBUG);
@@ -125,6 +126,14 @@ class Emagedev_Trello_Helper_Order extends Mage_Core_Helper_Abstract
             ->setDue($dateTime->format(DateTime::W3C))
             ->setDueComplete(true);
 
+        Mage::dispatchEvent(
+            'trello_order_card_create_before',
+            array(
+                'order' => $order,
+                'card'  => $card
+            )
+        );
+
         $card->save();
 
         Mage::dispatchEvent(
@@ -148,6 +157,10 @@ class Emagedev_Trello_Helper_Order extends Mage_Core_Helper_Abstract
      */
     public function getStatusList(Mage_Sales_Model_Order_Status $status, $create = false)
     {
+        if (!$this->getDataHelper()->isEnabled()) {
+            return false;
+        }
+
         if (!$status || !$status->getStatus()) {
             return false;
         }
@@ -225,8 +238,12 @@ class Emagedev_Trello_Helper_Order extends Mage_Core_Helper_Abstract
      *
      * @return bool|Varien_Object
      */
-    public function updateOrderStatusList($order, $create = false)
+    public function updateOrderCard($order, $create = false)
     {
+        if (!$this->getDataHelper()->isEnabled()) {
+            return false;
+        }
+
         $card = $this->getOrderCard($order, $create);
 
         if (!$card) {
@@ -241,7 +258,7 @@ class Emagedev_Trello_Helper_Order extends Mage_Core_Helper_Abstract
             $statusCode = 'pending';
         }
 
-        $status = $this->getStatusByCode($statusCode);
+        $status = $this->getStatusByCode($statusCode, $order);
 
         if (!$status) {
             $this->getDataHelper()->log('No status model found for code ' . $statusCode, Zend_Log::DEBUG);
@@ -257,6 +274,7 @@ class Emagedev_Trello_Helper_Order extends Mage_Core_Helper_Abstract
 
         $card
             ->setListId($list->getListId())
+            ->setDescription($this->getOrderCardDescription($order))
             ->save();
 
         return new Varien_Object($card);
@@ -294,20 +312,54 @@ class Emagedev_Trello_Helper_Order extends Mage_Core_Helper_Abstract
 
         $cardDescriptionTemplate = Mage::getStoreConfig('trello_api/order_status/card_template');
 
-        $variables = new Varien_Object(array(
-            'customer' => $name,
-            'grand_total' => $order->getGrandTotal(),
-            'created_at' => $order->getCreatedAt(),
-        ));
+        $buttons = new Varien_Object(
+            array(
+                'order' => array(
+                    'label' => $this->getDataHelper()->__('Go To Magento Order'),
+                    'url' => Mage::getUrl('adminhtml/sales_order/view', array('order_id' => $order->getId()))
+                ),
+                'invoice' => array(
+                    'label' => $this->getDataHelper()->__('Make Invoice'),
+                    'url' => Mage::getUrl('adminhtml/sales_order_invoice/start', array('order_id' => $order->getId()))
+                ),
+                'ship' => array(
+                    'label' => $this->getDataHelper()->__('Ship'),
+                    'url' => Mage::getUrl('adminhtml/sales_order_shipment/start', array('order_id' => $order->getId()))
+                )
+            )
+        );
+
+        $variables = new Varien_Object(
+            array(
+                'customer_name'    => $name,
+                'order'            => $order,
+                'items'            => $this->getOrderCardItemsDescription($order),
+                'shipping_address' => $order->getShippingAddress(),
+                'billing_address'  => $order->getBillingAddress(),
+                'created_at'       => $order->getCreatedAt()
+            )
+        );
+
+        $order->getShippingAddress()->getName();
 
         Mage::dispatchEvent(
             'trello_order_card_generate_description',
             array(
                 'order'            => $order,
                 'variables_object' => $variables,
+                'buttons_object'   => $buttons,
                 'template'         => $cardDescriptionTemplate
             )
         );
+
+        $buttonsText = array();
+
+        foreach ($buttons->getData() as $buttonData) {
+            $buttonsText[] = '[' . $buttonData['label'] . '](' . $buttonData['url'] . ')';
+        }
+
+        $buttonsText = implode(' | ', $buttonsText);
+        $variables->setData('buttons', $buttonsText);
 
         $formatter = new Varien_Filter_Template();
         $formatter->setVariables($variables->getData());
@@ -315,7 +367,29 @@ class Emagedev_Trello_Helper_Order extends Mage_Core_Helper_Abstract
         return $formatter->filter($cardDescriptionTemplate);
     }
 
-    protected function getStatusByCode($code)
+    protected function getOrderCardItemsDescription(Mage_Sales_Model_Order $order)
+    {
+        $items = array();
+        $itemTemplate = Mage::getStoreConfig('trello_api/order_status/item_template');
+
+        /** @var Mage_Sales_Model_Order_Item $item */
+        foreach ($order->getAllVisibleItems() as $item) {
+            $formatter = new Varien_Filter_Template();
+            $formatter->setVariables(array(
+                'item' => $item,
+                'url'  => Mage::getModel('adminhtml/url')->getUrl(
+                    'adminhtml/catalog_product/edit',
+                    array('id' => $item->getProductId())
+                )
+            ));
+
+            $items[] = $formatter->filter($itemTemplate);
+        }
+
+        return implode(PHP_EOL, $items);
+    }
+
+    protected function getStatusByCode($code, $order)
     {
         /** @var Mage_Sales_Model_Order_Status $status */
         $status = Mage::getModel('sales/order_status');
@@ -325,6 +399,7 @@ class Emagedev_Trello_Helper_Order extends Mage_Core_Helper_Abstract
             'trello_status_get_by_code',
             array(
                 'code'   => $code,
+                'order'  => $order,
                 'status' => $status
             )
         );

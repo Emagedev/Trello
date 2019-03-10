@@ -15,8 +15,8 @@
  * DISCLAIMER
  *
  * Do not edit or add to this file if you wish to upgrade
- * the Omedrec Welcome module to newer versions in the future.
- * If you wish to customize the Omedrec Welcome module for your needs
+ * the Emagedev Trello module to newer versions in the future.
+ * If you wish to customize the Emagedev Trello module for your needs
  * please refer to http://www.magentocommerce.com for more information.
  *
  * @copyright  Copyright (C) Emagedev, LLC (https://www.emagedev.com/)
@@ -39,6 +39,16 @@ class Emagedev_Trello_Api_BoardController extends Mage_Core_Controller_Front_Act
 {
     public function indexAction()
     {
+        /** @var Emagedev_Trello_Helper_Data $moduleHelper */
+        $moduleHelper = Mage::helper('trello');
+
+        if (!$moduleHelper->isEnabled()) {
+            $this->getResponse()->setHttpResponseCode(501);
+            $this->getResponse()->setBody('Temporary disabled');
+
+            return;
+        }
+
         $jsonBody = $this->getRequest()->getRawBody();
 
         try {
@@ -53,6 +63,17 @@ class Emagedev_Trello_Api_BoardController extends Mage_Core_Controller_Front_Act
 
                 Mage::app()->getCacheInstance()->cleanType('config');
             } else {
+                if (!$moduleHelper->getWebhookId()) {
+                    $this->getResponse()->setHttpResponseCode(401);
+                    $this->getResponse()->setBody('Webhook not activated');
+
+                    return;
+                }
+
+                $jsonBody = $this->fixJson($jsonBody);
+
+                $this->getDataHelper()->log('Fixed data: ' . PHP_EOL . $jsonBody, Zend_Log::DEBUG);
+
                 /** @var Mage_Core_Helper_Data $helper */
                 $helper = Mage::helper('core');
 
@@ -79,6 +100,11 @@ class Emagedev_Trello_Api_BoardController extends Mage_Core_Controller_Front_Act
             $this->getResponse()->setHttpResponseCode(500);
             $this->getResponse()->setBody('Internal Server Error');
         }
+    }
+
+    protected function fixJson($json)
+    {
+        return preg_replace('/\\\\\\\\([^nrtvfb0])/U', '$1', $json);
     }
 
     protected function checkBoard($actionPayload)
